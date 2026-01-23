@@ -1,0 +1,7 @@
+[project]
+name = "mailconveyor"
+version = "0.0.1"
+description = "Rerouting and sending mails with Python, trying to implement a standalone mailing list service."
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = []
