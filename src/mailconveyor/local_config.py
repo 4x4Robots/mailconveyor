@@ -1,9 +1,9 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    database_url: str
+    database_url: str = "xxx"
     redis_url: str | None = None
-    api_key: str
+    api_key: str = "xxx"
 
     model_config = SettingsConfigDict(
         env_file=".env",
