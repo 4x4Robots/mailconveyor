@@ -1,0 +1,28 @@
+accounts:
+  - name: "Example Account"
+    imap:
+      host: "imap.gmail.com"
+      port: 993
+      username: "your-email@gmail.com"
+      password: "your-app-password"
+      mailbox: "INBOX"
+      use_idle: false
+      poll_interval_seconds: 30
+    smtp:
+      host: "smtp.gmail.com"
+      port: 587
+      username: "your-email@gmail.com"
+      password: "your-app-password"
+      use_tls: true
+      from_address: "your-email@gmail.com"
+      from_name: "Your Name"
+    lists:
+      - name: "Team"
+        recipients:
+          - email: "person1@example.com"
+            name: "Person 1"
+            active: true
+          - email: "person2@example.com"
+            name: "Person 2"
+            active: true
+log_level: "INFO"

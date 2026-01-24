@@ -1,7 +1,7 @@
-from pydantic import BaseModel, EmailStr, Field
-from typing import List, Optional
+import yaml
 from pathlib import Path
-import json
+from typing import List, Optional
+from pydantic import BaseModel, EmailStr, Field
 
 class Recipient(BaseModel):
     email: EmailStr
@@ -41,5 +41,5 @@ class AppConfig(BaseModel):
     log_level: str = Field(default="INFO")
 
 def load_config(path: Path) -> AppConfig:
-    data = json.loads(path.read_text(encoding="utf-8"))
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
     return AppConfig.model_validate(data)

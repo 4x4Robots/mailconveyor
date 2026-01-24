@@ -153,6 +153,11 @@ venv.bak/
 *.p12
 *.pfx
 
+# E-Mail configurations (ignore all YAML files)
+*.yaml
+*.yaml*
+!config.yaml.example
+
 # Spyder project settings
 .spyderproject
 .spyproject
