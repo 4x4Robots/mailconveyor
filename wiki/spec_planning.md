@@ -1,5 +1,7 @@
 # IMAP IDLE vs SMTP for Mailing
 
+https://copilot.microsoft.com/chats/878ES3QL5LVMcMkbZfb6P
+
 > Is it possible, that an IMAP mail account notifies my mail program when a
 > new mail arrived or is it only possible using polling? I'm looking into
 > building a small mailing list service like mailman or majordomo.

@@ -1,5 +1,9 @@
 # Managing Secrets in Public Python Repos
 
+https://docs.pydantic.dev/latest/concepts/pydantic_settings/
+
+https://copilot.microsoft.com/chats/oKH5o4US2jwSZh2W6BV5i
+
 > In a public repo python application, how can I manage secrets? 
 > E.g. as environment file or config? What are common and save approaches?
 

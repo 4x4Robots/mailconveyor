@@ -2,6 +2,15 @@
 
 https://docs.python.org/3/library/imaplib.html
 
+## Tutorials for imaplib
+
+https://de.python-3.com/?p=542
+
+warning AI!
+https://reintech.io/blog/how-to-create-an-email-client-with-python
+
+https://stackoverflow.com/questions/3775667/how-to-get-message-id-using-imaplib
+
 ## Reading Mail
 
 https://coderzcolumn.com/tutorials/python/imaplib-simple-guide-to-manage-mailboxes-using-python
