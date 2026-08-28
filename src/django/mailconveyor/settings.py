@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-%h0d+1u%$4t4k-gdctsr)sdabh3t42u6k2hvbtkhu(edneag7w
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # AD-003: Fernet encryption key for SMTP passwords
 # Generate with: from cryptography.fernet import Fernet; Fernet.generate_key()

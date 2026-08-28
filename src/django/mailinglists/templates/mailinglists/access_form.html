@@ -1,60 +1,68 @@
-{% extends "mailinglists/base.html" %}
+{% extends "accounts/base.html" %}
 
 {% block title %}Manage Access - {{ mailinglist.name }} - MailConveyor{% endblock %}
 
-{% block mailinglists_content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Manage Access for {{ mailinglist.name }}</h2>
-</div>
+{% block content %}
+    {% if user.is_authenticated %}
+        <div class="col-md-10 main-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Manage Access for {{ mailinglist.name }}</h2>
+            </div>
 
-<div class="card mb-4">
-    <div class="card-body">
-        <h5>Current Users with Access</h5>
-        {% if mailinglist.users_with_access.count > 0 %}
-            <ul class="list-group mb-3">
-                {% for user in mailinglist.users_with_access.all %}
-                    <li class="list-group-item">
-                        <strong>{{ user.get_full_name|default:user.username }}</strong> 
-                        (<em>{{ user.username }}</em>)
-                        - <span class="badge bg-{{ user.get_role|lower }} text-dark">{{ user.get_role }}</span>
-                    </li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p class="text-muted">No users currently have access to this mailing list.</p>
-        {% endif %}
-    </div>
-</div>
-
-<div class="card">
-    <div class="card-body">
-        <form method="post">
-            {% csrf_token %}
-            
-            <div class="mb-3">
-                <label for="{{ form.users.id_for_label }}" class="form-label">Select Users with Access *</label>
-                {{ form.users }}
-                {% if form.users.errors %}
-                    <div class="text-danger">{{ form.users.errors }}</div>
-                {% endif %}
-                <div class="form-text">
-                    Select which users should have access to this mailing list.
-                    {% if not is_admin %}
-                        <br><strong>Note:</strong> As a Manager, you can only manage access for users you have permission to manage.
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5>Current Users with Access</h5>
+                    {% if mailinglist.users_with_access.count > 0 %}
+                        <ul class="list-group mb-3">
+                            {% for user in mailinglist.users_with_access.all %}
+                                <li class="list-group-item">
+                                    <strong>{{ user.get_full_name|default:user.username }}</strong> 
+                                    (<em>{{ user.username }}</em>)
+                                    - <span class="badge bg-{{ user.get_role|lower }} text-dark">{{ user.get_role }}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted">No users currently have access to this mailing list.</p>
                     {% endif %}
                 </div>
             </div>
-            
-            <div class="alert alert-info">
-                <strong>Permissions:</strong> Users with access will automatically receive view permissions.
-                Managers and Admins will also receive change and delete permissions.
+
+            <div class="card">
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.users.id_for_label }}" class="form-label">Select Users with Access *</label>
+                            {{ form.users }}
+                            {% if form.users.errors %}
+                                <div class="text-danger">{{ form.users.errors }}</div>
+                            {% endif %}
+                            <div class="form-text">
+                                Select which users should have access to this mailing list.
+                                {% if not is_admin %}
+                                    <br><strong>Note:</strong> As a Manager, you can only manage access for users you have permission to manage.
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <strong>Permissions:</strong> Users with access will automatically receive view permissions.
+                            Managers and Admins will also receive change and delete permissions.
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="submit" class="btn btn-primary">Update Access</button>
+                            <a href="{% url 'mailinglists:detail' mailinglist.pk %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
             </div>
-            
-            <div class="d-flex justify-content-between mt-4">
-                <button type="submit" class="btn btn-primary">Update Access</button>
-                <a href="{% url 'mailinglists:detail' mailinglist.pk %}" class="btn btn-secondary">Cancel</a>
-            </div>
-        </form>
-    </div>
-</div>
+        </div>
+    {% else %}
+        <div class="col-12 main-content">
+            <p>Please log in to manage access.</p>
+        </div>
+    {% endif %}
 {% endblock %}

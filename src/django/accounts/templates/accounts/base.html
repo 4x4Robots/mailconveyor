@@ -40,6 +40,14 @@
                                 <a class="nav-link" href="{% url 'accounts:user_create' %}">Create User</a>
                             </li>
                         {% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'mailinglists:list' %}">Mailing Lists</a>
+                        </li>
+                        {% if user.is_app_manager %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'mailinglists:create' %}">Create Mailing List</a>
+                            </li>
+                        {% endif %}
                     {% endif %}
                 </ul>
                 <ul class="navbar-nav">
@@ -69,12 +77,24 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'accounts:user_list' %}">User Management</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'accounts:profile' %}">My Profile</a>
-                        </li>
                         {% if user.is_app_admin %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'accounts:user_create' %}">Create User</a>
+                            </li>
+                        {% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:profile' %}">My Profile</a>
+                        </li>
+                    </ul>
+                    <hr>
+                    <h5>Mailing Lists</h5>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'mailinglists:list' %}">All Mailing Lists</a>
+                        </li>
+                        {% if user.is_app_manager %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'mailinglists:create' %}">Create Mailing List</a>
                             </li>
                         {% endif %}
                     </ul>

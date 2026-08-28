@@ -23,6 +23,9 @@ class MailingListForm(forms.ModelForm):
         self.request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
         
+        # Make users_with_access not required
+        self.fields['users_with_access'].required = False
+        
         # If this is an existing mailing list, only show users that the current user can manage
         if self.instance and self.instance.pk and self.request:
             from accounts.utils import is_admin, is_manager
@@ -39,10 +42,11 @@ class MailingListForm(forms.ModelForm):
                 self.fields['users_with_access'].queryset = User.objects.filter(pk=self.request.user.pk)
         elif self.request:
             # For new mailing lists, restrict user selection based on role
-            if is_admin(self.request.user):
+            from accounts.utils import is_admin as check_is_admin, is_manager as check_is_manager
+            if check_is_admin(self.request.user):
                 # Admin can select any user
                 pass
-            elif is_manager(self.request.user):
+            elif check_is_manager(self.request.user):
                 # Manager can select any user
                 pass
             else:

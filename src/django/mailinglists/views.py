@@ -64,6 +64,31 @@ class MailingListListView(LoginRequiredMixin, ListView):
         context['user_role'] = get_user_role(self.request.user)
         context['is_admin'] = is_admin(self.request.user)
         context['is_manager'] = is_manager(self.request.user)
+        
+        # Add permission flags for each mailing list
+        user = self.request.user
+        mailinglists = context['mailinglists']
+        
+        for mailinglist in mailinglists:
+            # For admin, always allow edit and delete
+            if is_admin(user):
+                mailinglist.can_edit_list = True
+                mailinglist.can_delete_list = True
+            # For manager, check permissions or access
+            elif is_manager(user):
+                mailinglist.can_edit_list = (
+                    user.has_perm('change_mailinglist', mailinglist) or
+                    mailinglist.users_with_access.filter(pk=user.pk).exists()
+                )
+                mailinglist.can_delete_list = (
+                    user.has_perm('delete_mailinglist', mailinglist) or
+                    mailinglist.users_with_access.filter(pk=user.pk).exists()
+                )
+            # For regular users, no edit/delete permissions
+            else:
+                mailinglist.can_edit_list = False
+                mailinglist.can_delete_list = False
+        
         return context
 
 
@@ -138,7 +163,7 @@ class MailingListUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
         return False
     
     def handle_no_permission(self):
-        messages.error(self.request, "You do not have permission to edit this mailing list.")
+        messages.error(self.request, "You do not have permission to create mailing lists.")
         return redirect('mailinglists:list')
     
     def get_form_kwargs(self):
@@ -147,9 +172,14 @@ class MailingListUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
         kwargs['request'] = self.request
         return kwargs
     
+    def form_valid(self, form):
+        """Show success message after form submission."""
+        messages.success(self.request, f"Mailing list '{form.instance.name}' created successfully!")
+        return super().form_valid(form)
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['action'] = 'Edit'
+        context['action'] = 'Create'
         return context
 
 
@@ -188,7 +218,7 @@ class MailingListDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView)
         mailing_list = self.get_object()
         
         # Add SMTP config if it exists
-        context['smtp_config'] = mailing_list.smtp_config.first()
+        context['smtp_config'] = SmtpConfig.objects.filter(mailing_list=mailing_list).first()
         context['is_admin'] = is_admin(self.request.user)
         context['is_manager'] = is_manager(self.request.user)
         context['user_role'] = get_user_role(self.request.user)
