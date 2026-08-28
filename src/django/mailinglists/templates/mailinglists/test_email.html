@@ -1,0 +1,89 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}Send Test Email - {{ mailinglist.name }} - MailConveyor{% endblock %}
+
+{% block content %}
+    {% if user.is_authenticated %}
+        <div class="col-md-10 main-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Send Test Email for {{ mailinglist.name }}</h2>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5>SMTP Configuration</h5>
+                    <dl class="row">
+                        <dt class="col-sm-3">Host:</dt>
+                        <dd class="col-sm-9">{{ smtp_config.host }}:{{ smtp_config.port }}</dd>
+                        
+                        <dt class="col-sm-3">Username:</dt>
+                        <dd class="col-sm-9">{{ smtp_config.username|default:"Not set" }}</dd>
+                        
+                        <dt class="col-sm-3">Security:</dt>
+                        <dd class="col-sm-9">
+                            {% if smtp_config.use_ssl %}
+                                <span class="badge bg-success">SSL</span>
+                            {% elif smtp_config.use_tls %}
+                                <span class="badge bg-success">TLS</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">No encryption</span>
+                            {% endif %}
+                        </dd>
+                        
+                        <dt class="col-sm-3">From Email:</dt>
+                        <dd class="col-sm-9">{{ smtp_config.default_from_email|default:"Not set" }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.to_email.id_for_label }}" class="form-label">Recipient Email *</label>
+                            {{ form.to_email }}
+                            {% if form.to_email.errors %}
+                                <div class="text-danger">{{ form.to_email.errors }}</div>
+                            {% endif %}
+                            <div class="form-text">{{ form.to_email.help_text }}</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.subject.id_for_label }}" class="form-label">Subject *</label>
+                            {{ form.subject }}
+                            {% if form.subject.errors %}
+                                <div class="text-danger">{{ form.subject.errors }}</div>
+                            {% endif %}
+                            <div class="form-text">{{ form.subject.help_text }}</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.body.id_for_label }}" class="form-label">Message Body *</label>
+                            {{ form.body }}
+                            {% if form.body.errors %}
+                                <div class="text-danger">{{ form.body.errors }}</div>
+                            {% endif %}
+                            <div class="form-text">{{ form.body.help_text }}</div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <strong>Note:</strong> This will send a real email to the specified address using the SMTP configuration above.
+                            Make sure the recipient email address is valid and can receive emails.
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="submit" class="btn btn-primary">Send Test Email</button>
+                            <a href="{% url 'mailinglists:detail' mailinglist.pk %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="col-12 main-content">
+            <p>Please log in to send test emails.</p>
+        </div>
+    {% endif %}
+{% endblock %}

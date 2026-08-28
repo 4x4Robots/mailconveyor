@@ -159,3 +159,25 @@ class MailingListAccessForm(forms.Form):
             self.mailing_list.users_with_access.set(users)
             return self.mailing_list
         return None
+
+
+class TestEmailForm(forms.Form):
+    """Form for sending test emails to verify SMTP configuration."""
+    
+    to_email = forms.EmailField(
+        label="Recipient Email",
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'test@example.com'}),
+        help_text="Email address to send the test email to"
+    )
+    
+    subject = forms.CharField(
+        label="Subject",
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Test Email'}),
+        help_text="Subject line for the test email"
+    )
+    
+    body = forms.CharField(
+        label="Message Body",
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 5, 'placeholder': 'This is a test email...'}),
+        help_text="Content of the test email"
+    )

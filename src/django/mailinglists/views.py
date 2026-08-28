@@ -11,7 +11,8 @@ from django.http import Http404
 from guardian.mixins import PermissionRequiredMixin
 from guardian.decorators import permission_required
 from .models import MailingList, SmtpConfig
-from .forms import MailingListForm, SmtpConfigForm, MailingListAccessForm
+from .forms import MailingListForm, SmtpConfigForm, MailingListAccessForm, TestEmailForm
+from .utils import send_test_email, test_smtp_connection
 from accounts.utils import is_admin, is_manager, get_user_role, ADMIN_GROUP, MANAGER_GROUP
 
 
@@ -454,3 +455,97 @@ def mailinglist_access_check(request, pk):
         request.user.has_perm('view_mailinglist', mailing_list) or
         mailing_list.users_with_access.filter(pk=request.user.pk).exists()
     )
+
+
+@login_required
+@user_passes_test(lambda u: is_manager(u), login_url='mailinglists:list')
+def send_test_email_view(request, mailinglist_pk):
+    """
+    Send a test email to verify SMTP configuration.
+    
+    - ADMIN: Can send test emails for any mailing list
+    - MANAGER: Can send test emails for mailing lists they have access to
+    - USER: Cannot send test emails
+    """
+    mailing_list = get_object_or_404(MailingList, pk=mailinglist_pk)
+    
+    # Check permissions
+    if not is_admin(request.user):
+        # For managers, check if they have access to this mailing list
+        if not (request.user.has_perm('change_mailinglist', mailing_list) or
+                mailing_list.users_with_access.filter(pk=request.user.pk).exists()):
+            messages.error(request, "You do not have permission to send test emails for this mailing list.")
+            return redirect('mailinglists:list')
+    
+    smtp_config = SmtpConfig.objects.filter(mailing_list=mailing_list).first()
+    
+    if not smtp_config:
+        messages.error(request, "This mailing list does not have an SMTP configuration. Please add one first.")
+        return redirect('mailinglists:detail', pk=mailing_list.pk)
+    
+    if request.method == 'POST':
+        form = TestEmailForm(request.POST)
+        if form.is_valid():
+            to_email = form.cleaned_data['to_email']
+            subject = form.cleaned_data['subject']
+            body = form.cleaned_data['body']
+            
+            # Use the default from email or the SMTP username
+            from_email = smtp_config.default_from_email or smtp_config.username or request.user.email
+            
+            # Send the test email
+            success, message = send_test_email(smtp_config, from_email, to_email, subject, body)
+            
+            if success:
+                messages.success(request, message)
+            else:
+                messages.error(request, message)
+            
+            return redirect('mailinglists:detail', pk=mailing_list.pk)
+    else:
+        form = TestEmailForm()
+    
+    return render(request, 'mailinglists/test_email.html', {
+        'form': form,
+        'mailinglist': mailing_list,
+        'smtp_config': smtp_config,
+        'is_admin': is_admin(request.user),
+        'is_manager': is_manager(request.user),
+    })
+
+
+@login_required
+@user_passes_test(lambda u: is_manager(u), login_url='mailinglists:list')
+def test_smtp_connection_view(request, mailinglist_pk):
+    """
+    Test the SMTP connection without sending an email.
+    
+    - ADMIN: Can test SMTP connections for any mailing list
+    - MANAGER: Can test SMTP connections for mailing lists they have access to
+    - USER: Cannot test SMTP connections
+    """
+    mailing_list = get_object_or_404(MailingList, pk=mailinglist_pk)
+    
+    # Check permissions
+    if not is_admin(request.user):
+        # For managers, check if they have access to this mailing list
+        if not (request.user.has_perm('change_mailinglist', mailing_list) or
+                mailing_list.users_with_access.filter(pk=request.user.pk).exists()):
+            messages.error(request, "You do not have permission to test SMTP connections for this mailing list.")
+            return redirect('mailinglists:list')
+    
+    smtp_config = SmtpConfig.objects.filter(mailing_list=mailing_list).first()
+    
+    if not smtp_config:
+        messages.error(request, "This mailing list does not have an SMTP configuration. Please add one first.")
+        return redirect('mailinglists:detail', pk=mailing_list.pk)
+    
+    # Test the SMTP connection
+    success, message = test_smtp_connection(smtp_config)
+    
+    if success:
+        messages.success(request, message)
+    else:
+        messages.error(request, message)
+    
+    return redirect('mailinglists:detail', pk=mailing_list.pk)

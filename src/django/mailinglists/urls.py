@@ -27,4 +27,8 @@ urlpatterns = [
     
     # Manage access
     path('<int:pk>/access/', views.manage_access_view, name='manage_access'),
+    
+    # Test email functionality
+    path('<int:mailinglist_pk>/test-email/', views.send_test_email_view, name='test_email'),
+    path('<int:mailinglist_pk>/test-smtp/', views.test_smtp_connection_view, name='test_smtp'),
 ]
