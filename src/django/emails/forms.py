@@ -66,7 +66,7 @@ class EmailComposerForm(forms.ModelForm):
     
     class Meta:
         model = Email
-        fields = ['subject', 'body', 'is_html', 'from_email', 'template']
+        fields = ['subject', 'body', 'is_html', 'from_email']
         widgets = {
             'subject': forms.TextInput(attrs={'class': 'form-control'}),
             'body': forms.Textarea(attrs={'class': 'form-control', 'rows': 15}),
@@ -82,22 +82,35 @@ class EmailComposerForm(forms.ModelForm):
             from mailinglists.models import MailingList
             
             # Get mailing lists the user has access to
+            # Get recipients from accessible mailing lists
             accessible_lists = MailingList.objects.filter(
                 users_with_access=user
-            ).distinct()
+            )
             
             # Get recipients from accessible mailing lists
             accessible_recipients = Recipient.objects.filter(
                 mailing_lists__in=accessible_lists
-            ).distinct()
+            )
             
             # Also include recipients created by the user
             user_recipients = Recipient.objects.filter(created_by=user)
             
-            # Combine and deduplicate
-            all_recipients = accessible_recipients.union(user_recipients).distinct()
+            # Combine queries - Django doesn't support distinct() after union()
+            # So we'll use a list to deduplicate
+            recipient_ids = set()
+            all_recipients = []
             
-            self.fields['recipients'].queryset = all_recipients
+            for recipient in accessible_recipients:
+                if recipient.id not in recipient_ids:
+                    all_recipients.append(recipient)
+                    recipient_ids.add(recipient.id)
+            
+            for recipient in user_recipients:
+                if recipient.id not in recipient_ids:
+                    all_recipients.append(recipient)
+                    recipient_ids.add(recipient.id)
+            
+            self.fields['recipients'].queryset = Recipient.objects.filter(id__in=recipient_ids)
             self.fields['mailing_lists'].queryset = accessible_lists
             
             # Filter templates by accessible mailing lists or user-created
@@ -107,8 +120,26 @@ class EmailComposerForm(forms.ModelForm):
             )
             global_templates = EmailTemplate.objects.filter(mailing_list__isnull=True)
             
-            all_templates = user_templates.union(list_templates, global_templates).distinct()
-            self.fields['template'].queryset = all_templates
+            # Combine template queries without using union() + distinct()
+            template_ids = set()
+            all_template_ids = []
+            
+            for template in user_templates:
+                if template.id not in template_ids:
+                    all_template_ids.append(template.id)
+                    template_ids.add(template.id)
+            
+            for template in list_templates:
+                if template.id not in template_ids:
+                    all_template_ids.append(template.id)
+                    template_ids.add(template.id)
+                    
+            for template in global_templates:
+                if template.id not in template_ids:
+                    all_template_ids.append(template.id)
+                    template_ids.add(template.id)
+            
+            self.fields['template'].queryset = EmailTemplate.objects.filter(id__in=all_template_ids)
     
     def clean(self):
         cleaned_data = super().clean()
