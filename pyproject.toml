@@ -14,7 +14,8 @@ dependencies = [
 [dependency-groups]
 dev = [
   {include-group = "lint"},
-  {include-group = "test"}
+  {include-group = "test"},
+  {include-group = "django"}
 ]
 lint = [
   "ruff"
@@ -22,9 +23,13 @@ lint = [
 test = [
   "pytest>=9.0.2"
 ]
+django = [
+  "django>=6.1",
+]
 
 # https://docs.pytest.org/en/stable/explanation/goodpractices.html
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
 addopts = ["--import-mode=importlib"]
+
