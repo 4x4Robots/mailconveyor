@@ -14,6 +14,16 @@
                     {% csrf_token %}
                     
                     <div class="mb-3">
+                        <label for="id_username" class="form-label">Username *</label>
+                        {{ form.username }}
+                        {% if form.username.errors %}
+                            <div class="text-danger">
+                                {{ form.username.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
                         <label for="id_email" class="form-label">Email *</label>
                         {{ form.email }}
                         {% if form.email.errors %}
@@ -44,7 +54,7 @@
                         </div>
                     </div>
                     
-                    {% if not object or request.user.is_admin %}
+                    {% if request.user.is_admin %}
                         <div class="mb-3">
                             <label for="id_role" class="form-label">Role *</label>
                             {{ form.role }}
@@ -77,9 +87,7 @@
                                 {% endif %}
                             </div>
                         </div>
-                    {% endif %}
-                    
-                    {% if object and request.user.is_admin %}
+                    {% else %}
                         <div class="mb-3 form-check">
                             {{ form.is_active }}
                             <label for="id_is_active" class="form-check-label">Active</label>

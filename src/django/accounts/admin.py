@@ -1,41 +1,36 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from django.contrib.auth.forms import UserChangeForm, UserCreationForm
-from django.utils.translation import gettext_lazy as _
-from .models import CustomUser
+from django.contrib.auth.models import User
 
 
 class CustomUserAdmin(UserAdmin):
-    """Custom admin configuration for CustomUser model with email-only authentication."""
-    
-    # The forms to add and change user instances
-    form = UserChangeForm
-    add_form = UserCreationForm
+    """Custom admin configuration for User model with role groups."""
     
     # Fields to be used in displaying the User model
-    list_display = ('email', 'first_name', 'last_name', 'role', 'is_active', 'date_joined', 'last_login')
-    list_filter = ('role', 'is_active', 'date_joined')
-    search_fields = ('email', 'first_name', 'last_name')
-    ordering = ('email',)
+    list_display = ('username', 'email', 'first_name', 'last_name', 'is_active', 'date_joined', 'last_login')
+    list_filter = ('is_active', 'is_staff', 'is_superuser', 'date_joined')
+    search_fields = ('username', 'email', 'first_name', 'last_name')
+    ordering = ('username',)
     
     # Fields for the user creation form
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'first_name', 'last_name', 'role', 'password1', 'password2'),
+            'fields': ('username', 'email', 'first_name', 'last_name', 'password1', 'password2'),
         }),
     )
     
     # Fields for the user change form
     fieldsets = (
-        (None, {'fields': ('email', 'password')}),
-        ('Personal info', {'fields': ('first_name', 'last_name')}),
+        (None, {'fields': ('username', 'password')}),
+        ('Personal info', {'fields': ('first_name', 'last_name', 'email')}),
         ('Permissions', {
-            'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions', 'role'),
+            'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions'),
         }),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
 
 
-# Register the CustomUser model with the custom admin class
-admin.site.register(CustomUser, CustomUserAdmin)
+# Unregister the default User admin and register our custom one
+admin.site.unregister(User)
+admin.site.register(User, CustomUserAdmin)

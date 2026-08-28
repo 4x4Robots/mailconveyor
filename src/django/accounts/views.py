@@ -1,13 +1,13 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.models import User, Group
 from django.contrib import messages
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.http import HttpResponseForbidden
-from .models import CustomUser
 from .forms import CustomUserCreationForm, CustomUserChangeForm, CustomAuthenticationForm, ProfileUpdateForm
+from .utils import ADMIN_GROUP, MANAGER_GROUP, USER_GROUP, is_admin, is_manager, get_user_role, assign_role_to_user
 
 
 def login_view(request):
@@ -15,20 +15,17 @@ def login_view(request):
     if request.method == 'POST':
         form = CustomAuthenticationForm(request, data=request.POST)
         if form.is_valid():
-            email = form.cleaned_data.get('username')  # username field contains email
+            username = form.cleaned_data.get('username')
             password = form.cleaned_data.get('password')
-            
-            # Authenticate using email as username field
-            user = authenticate(request, username=email, password=password)
-            
+            user = authenticate(request, username=username, password=password)
             if user is not None:
                 login(request, user)
-                messages.success(request, f"Welcome back, {user.email}!")
+                messages.success(request, f"Welcome back, {user.username}!")
                 return redirect('accounts:user_list')
             else:
-                messages.error(request, "Invalid email or password.")
+                messages.error(request, "Invalid username or password.")
         else:
-            messages.error(request, "Invalid email or password.")
+            messages.error(request, "Invalid username or password.")
     else:
         form = CustomAuthenticationForm()
     
@@ -44,100 +41,121 @@ def logout_view(request):
 
 class UserListView(LoginRequiredMixin, ListView):
     """List all users with filtering by role."""
-    model = CustomUser
+    model = User
     template_name = 'accounts/user_list.html'
     context_object_name = 'users'
     paginate_by = 20
-
+    
     def get_queryset(self):
-        queryset = super().get_queryset()
-
+        queryset = super().get_queryset().order_by('username')
+        
         # Filter by role if specified
         role_filter = self.request.GET.get('role')
-        if role_filter and role_filter in dict(CustomUser.Role.choices):
-            queryset = queryset.filter(role=role_filter)
-
+        if role_filter and role_filter in [ADMIN_GROUP, MANAGER_GROUP, USER_GROUP]:
+            queryset = queryset.filter(groups__name=role_filter)
+        
         # ADMIN can see all users
         if self.request.user.is_admin():
-            return queryset.order_by('email')
-
+            return queryset
+        
         # MANAGER can see all users but not edit them
         elif self.request.user.is_manager():
-            return queryset.order_by('email')
-
+            return queryset
+        
         # Regular USER can only see themselves
         else:
             return queryset.filter(pk=self.request.user.pk)
-
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['roles'] = CustomUser.Role.choices
+        context['roles'] = [(ADMIN_GROUP, 'Admin'), (MANAGER_GROUP, 'Manager'), (USER_GROUP, 'User')]
         context['current_role_filter'] = self.request.GET.get('role', '')
         return context
 
 
 class UserCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     """Create new user (ADMIN only)."""
-    model = CustomUser
+    model = User
     form_class = CustomUserCreationForm
     template_name = 'accounts/user_form.html'
     success_url = reverse_lazy('accounts:user_list')
-
+    
     def test_func(self):
-        return self.request.user.is_admin()
-
+        return is_admin(self.request.user)
+    
     def handle_no_permission(self):
         messages.error(self.request, "You do not have permission to create users.")
         return redirect('accounts:user_list')
-
+    
     def form_valid(self, form):
-        messages.success(self.request, f"User {form.cleaned_data['email']} created successfully!")
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        # Set role based on form data
+        role = form.cleaned_data.get('role')
+        user = self.object
+        assign_role_to_user(user, role)
+        
+        messages.success(self.request, f"User {user.username} created successfully!")
+        return response
 
 
 class UserUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
-    """Update user (ADMIN can edit all, MANAGER can edit own, USER can edit own)."""
-    model = CustomUser
+    """Update user (ADMIN can edit all, others can edit self)."""
+    model = User
     form_class = CustomUserChangeForm
     template_name = 'accounts/user_form.html'
     success_url = reverse_lazy('accounts:user_list')
-
+    
     def test_func(self):
         user = self.get_object()
         # ADMIN can edit anyone
-        if self.request.user.is_admin():
+        if is_admin(self.request.user):
             return True
-        # MANAGER and USER can only edit themselves
+        # Others can only edit themselves
         return user == self.request.user
-
+    
     def handle_no_permission(self):
         messages.error(self.request, "You do not have permission to edit this user.")
         return redirect('accounts:user_list')
-
+    
     def form_valid(self, form):
-        messages.success(self.request, f"User {form.instance.email} updated successfully!")
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        # Update role based on form data (ADMIN only)
+        if is_admin(self.request.user):
+            role = form.cleaned_data.get('role')
+            assign_role_to_user(self.object, role)
+        
+        messages.success(self.request, f"User {self.object.username} updated successfully!")
+        return response
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        # Set initial role for the form
+        user = self.get_object()
+        if user.groups.exists():
+            kwargs['initial'] = kwargs.get('initial', {})
+            kwargs['initial']['role'] = user.groups.first().name
+        return kwargs
 
 
 class UserDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     """Delete user (ADMIN only)."""
-    model = CustomUser
+    model = User
     template_name = 'accounts/user_confirm_delete.html'
     success_url = reverse_lazy('accounts:user_list')
-
+    
     def test_func(self):
-        return self.request.user.is_admin()
-
+        return is_admin(self.request.user)
+    
     def handle_no_permission(self):
         messages.error(self.request, "You do not have permission to delete users.")
         return redirect('accounts:user_list')
-
+    
     def delete(self, request, *args, **kwargs):
         user = self.get_object()
         if user == request.user:
             messages.error(request, "You cannot delete your own account.")
             return redirect('accounts:user_list')
-        messages.success(request, f"User {user.email} deleted successfully!")
+        messages.success(request, f"User {user.username} deleted successfully!")
         return super().delete(request, *args, **kwargs)
 
 
@@ -152,7 +170,7 @@ def profile_view(request):
             return redirect('accounts:profile')
     else:
         form = ProfileUpdateForm(instance=request.user)
-
+    
     return render(request, 'accounts/profile.html', {'form': form})
 
 
@@ -160,7 +178,7 @@ def profile_view(request):
 def change_password_view(request):
     """Change own password."""
     from django.contrib.auth.forms import PasswordChangeForm
-
+    
     if request.method == 'POST':
         form = PasswordChangeForm(request.user, request.POST)
         if form.is_valid():
@@ -171,5 +189,5 @@ def change_password_view(request):
             return redirect('accounts:profile')
     else:
         form = PasswordChangeForm(request.user)
-
+    
     return render(request, 'accounts/change_password.html', {'form': form})

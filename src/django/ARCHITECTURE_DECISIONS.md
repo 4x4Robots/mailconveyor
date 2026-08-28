@@ -21,23 +21,26 @@ This file tracks all significant architectural decisions for the MailConveyor pr
 ---
 
 ### AD-002: Authentication & Object-Level Permissions
-**Status**: ✅ Accepted (Updated 2026-08-28)
+**Status**: ✅ Accepted (Updated)
 **Date**: 2026-08-28
 **Context**: User access control for mailing lists
 
 **Decision**: 
-1. Use **email-only authentication** (no username field)
-2. Use **django-guardian** for object-level permissions
+1. Use **Django's built-in User model** with username authentication
+2. Use **Django groups** for role management (Admin, Manager, User)
+3. Use **django-guardian** for object-level permissions
 
 **Rationale**: 
-- Email-only authentication simplifies the user experience and data model
+- AD-001: Use Django native capabilities wherever possible
+- Django's built-in User model is well-tested and maintained
+- Groups provide a simple way to manage user roles
 - Need fine-grained access control (users should only access specific mailing lists)
 - Django's built-in permissions are model-level only, not object-level
 - Guardian provides object-level permissions out of the box
 
 **Consequences**:
-- CustomUser model uses `email` as `USERNAME_FIELD`
-- No username field in the user model
+- Use standard Django User model with username/email/first_name/last_name
+- Roles are implemented as groups: Admin, Manager, User
 - Add `django-guardian` as a dependency
 - Users will have permissions on specific MailingList instances
 - Permission checks will use Guardian's API: `user.has_perm('view_mailinglist', mailinglist)`
@@ -45,17 +48,21 @@ This file tracks all significant architectural decisions for the MailConveyor pr
 
 **Implementation Notes**:
 ```python
-# models.py
-class CustomUser(AbstractUser):
-    username = None
-    email = models.EmailField(unique=True)
-    USERNAME_FIELD = 'email'
-    
 # settings.py
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'guardian.backends.ObjectPermissionBackend',
 ]
+
+# Create default groups
+from django.contrib.auth.models import Group
+Group.objects.get_or_create(name='Admin')
+Group.objects.get_or_create(name='Manager') 
+Group.objects.get_or_create(name='User')
+
+# Check user roles
+user.is_admin = user.groups.filter(name='Admin').exists()
+user.is_manager = user.groups.filter(name__in=['Manager', 'Admin']).exists()
 ```
 
 ---
@@ -305,7 +312,7 @@ class Command(BaseCommand):
 | ID | Decision | Status | Date |
 |----|----------|--------|------|
 | AD-001 | Use Django native capabilities | ✅ | 2026-08-28 |
-| AD-002 | Email-only authentication + django-guardian for object-level permissions | ✅ | 2026-08-28 |
+| AD-002 | Django built-in User + groups for roles + django-guardian for object-level permissions | ✅ | 2026-08-28 |
 | AD-003 | Fernet encryption for SMTP passwords | ✅ | 2026-08-28 |
 | AD-004 | Sync now, async queue later with retry logic | ✅ | 2026-08-28 |
 | AD-005 | Recipient uniqueness by (first_name, last_name, email), deduplicate emails by address | ✅ | 2026-08-28 |
@@ -344,4 +351,4 @@ None currently. All critical decisions have been made for initial implementation
 |------|--------|---------|
 | 2026-08-28 | Initial | Created document with decisions AD-001 through AD-009 |
 | 2026-08-28 | Updated | AD-005: Changed uniqueness constraint to (first_name, last_name, email) and added email deduplication requirement |
-| 2026-08-28 | Updated | AD-002: Added email-only authentication decision, removed username field from user model |
+| 2026-08-28 | Updated | AD-002: Simplified to use Django built-in User model with groups for roles |

@@ -63,7 +63,6 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'accounts.context_processors.user_role',
             ],
         },
     },
@@ -135,8 +134,8 @@ MAILERS = {
     },
 }
 
-# Custom user model
-AUTH_USER_MODEL = 'accounts.CustomUser'
+# Use Django's built-in User model
+# AUTH_USER_MODEL = 'django.contrib.auth.models.User'  # This is the default
 
 # Authentication backends (AD-002: django-guardian for object-level permissions)
 AUTHENTICATION_BACKENDS = [
