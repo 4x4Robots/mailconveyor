@@ -53,9 +53,9 @@ class CustomUserChangeForm(UserChangeForm):
 class CustomAuthenticationForm(AuthenticationForm):
     """Custom authentication form using email instead of username."""
     
-    username = forms.EmailField(
-        label=_("Email"),
-        widget=forms.EmailInput(attrs={'class': 'form-control', 'autofocus': True})
+    username = forms.CharField(
+        label=_("Email or Username"),
+        widget=forms.TextInput(attrs={'class': 'form-control', 'autofocus': True})
     )
     password = forms.CharField(
         label=_("Password"),
@@ -65,7 +65,7 @@ class CustomAuthenticationForm(AuthenticationForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['username'].label = _("Email")
+        self.fields['username'].label = _("Email or Username")
 
 
 class ProfileUpdateForm(forms.ModelForm):
@@ -73,10 +73,11 @@ class ProfileUpdateForm(forms.ModelForm):
     
     class Meta:
         model = CustomUser
-        fields = ('first_name', 'last_name', 'email')
+        fields = ('username', 'first_name', 'last_name', 'email')
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['username'].widget.attrs.update({'class': 'form-control'})
         self.fields['first_name'].widget.attrs.update({'class': 'form-control'})
         self.fields['last_name'].widget.attrs.update({'class': 'form-control'})
         self.fields['email'].widget.attrs.update({'class': 'form-control'})

@@ -14,7 +14,7 @@
                     {% csrf_token %}
                     
                     <div class="mb-3">
-                        <label for="id_username" class="form-label">Email</label>
+                        <label for="id_username" class="form-label">Email or Username</label>
                         {{ form.username }}
                         {% if form.username.errors %}
                             <div class="text-danger">

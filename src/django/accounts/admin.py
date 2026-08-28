@@ -12,22 +12,22 @@ class CustomUserAdmin(UserAdmin):
     add_form = UserCreationForm
     
     # Fields to be used in displaying the User model
-    list_display = ('email', 'first_name', 'last_name', 'role', 'is_active', 'date_joined', 'last_login')
+    list_display = ('username', 'email', 'first_name', 'last_name', 'role', 'is_active', 'date_joined', 'last_login')
     list_filter = ('role', 'is_active', 'date_joined')
-    search_fields = ('email', 'first_name', 'last_name')
+    search_fields = ('username', 'email', 'first_name', 'last_name')
     ordering = ('email',)
     
     # Fields for the user creation form
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'first_name', 'last_name', 'role', 'password1', 'password2'),
+            'fields': ('username', 'email', 'first_name', 'last_name', 'role', 'password1', 'password2'),
         }),
     )
     
     # Fields for the user change form
     fieldsets = (
-        (None, {'fields': ('email', 'password')}),
+        (None, {'fields': ('username', 'email', 'password')}),
         ('Personal info', {'fields': ('first_name', 'last_name')}),
         ('Permissions', {
             'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions', 'role'),
