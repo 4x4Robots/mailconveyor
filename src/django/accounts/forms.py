@@ -21,7 +21,7 @@ class CustomUserCreationForm(UserCreationForm):
     )
     role = forms.ChoiceField(
         label=_("Role"),
-        choices=[('Admin', 'Admin'), ('Manager', 'Manager'), ('User', 'User')],
+        choices=[('User', 'User'), ('Manager', 'Manager'), ('Admin', 'Admin')],
         required=True,
         widget=forms.Select(attrs={'class': 'form-control'})
     )
@@ -62,7 +62,7 @@ class CustomUserChangeForm(UserChangeForm):
     )
     role = forms.ChoiceField(
         label=_("Role"),
-        choices=[('Admin', 'Admin'), ('Manager', 'Manager'), ('User', 'User')],
+        choices=[('User', 'User'), ('Manager', 'Manager'), ('Admin', 'Admin')],
         required=True,
         widget=forms.Select(attrs={'class': 'form-control'})
     )

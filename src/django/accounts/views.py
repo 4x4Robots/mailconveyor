@@ -68,7 +68,7 @@ class UserListView(LoginRequiredMixin, ListView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['roles'] = [(ADMIN_GROUP, 'Admin'), (MANAGER_GROUP, 'Manager'), (USER_GROUP, 'User')]
+        context['roles'] = [(USER_GROUP, 'User'), (MANAGER_GROUP, 'Manager'), (ADMIN_GROUP, 'Admin')]
         context['current_role_filter'] = self.request.GET.get('role', '')
         return context
 
