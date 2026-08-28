@@ -1,0 +1,43 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}MailConveyor - Mailing Lists{% endblock %}
+
+{% block content %}
+    {% if user.is_authenticated %}
+        <div class="col-md-2 sidebar">
+            <h5>Mailing Lists</h5>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'mailinglists:list' %}">All Mailing Lists</a>
+                </li>
+                {% if user.is_app_manager %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'mailinglists:create' %}">Create Mailing List</a>
+                    </li>
+                {% endif %}
+            </ul>
+            <hr>
+            <h5>User Management</h5>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'accounts:user_list' %}">Users</a>
+                </li>
+                {% if user.is_app_admin %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'accounts:user_create' %}">Create User</a>
+                    </li>
+                {% endif %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'accounts:profile' %}">My Profile</a>
+                </li>
+            </ul>
+        </div>
+        <div class="col-md-10 main-content">
+            {% block mailinglists_content %}{% endblock %}
+        </div>
+    {% else %}
+        <div class="col-12 main-content">
+            {% block mailinglists_content %}{% endblock %}
+        </div>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends "mailinglists/base.html" %}
+
+{% block title %}{{ action }} - MailConveyor{% endblock %}
+
+{% block mailinglists_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{{ action }}</h2>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5>Mailing List: {{ mailinglist.name }}</h5>
+        <p class="text-muted">{{ mailinglist.description|truncatechars:100 }}</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Connection Settings</h5>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.host.id_for_label }}" class="form-label">SMTP Host *</label>
+                        {{ form.host }}
+                        {% if form.host.errors %}
+                            <div class="text-danger">{{ form.host.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.port.id_for_label }}" class="form-label">Port *</label>
+                        {{ form.port }}
+                        {% if form.port.errors %}
+                            <div class="text-danger">{{ form.port.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        {{ form.use_tls }}
+                        <label for="{{ form.use_tls.id_for_label }}" class="form-check-label">Use TLS</label>
+                        {% if form.use_tls.errors %}
+                            <div class="text-danger">{{ form.use_tls.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        {{ form.use_ssl }}
+                        <label for="{{ form.use_ssl.id_for_label }}" class="form-check-label">Use SSL</label>
+                        {% if form.use_ssl.errors %}
+                            <div class="text-danger">{{ form.use_ssl.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <h5>Authentication & Email</h5>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
+                        {{ form.username }}
+                        {% if form.username.errors %}
+                            <div class="text-danger">{{ form.username.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.password.id_for_label }}" class="form-label">Password</label>
+                        {{ form.password }}
+                        {% if form.password.errors %}
+                            <div class="text-danger">{{ form.password.errors }}</div>
+                        {% endif %}
+                        <div class="form-text">
+                            {{ form.password.help_text }}
+                            {% if mailinglist.smtp_config %}
+                                <br>Leave blank to keep current password.
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.default_from_email.id_for_label }}" class="form-label">Default From Email</label>
+                        {{ form.default_from_email }}
+                        {% if form.default_from_email.errors %}
+                            <div class="text-danger">{{ form.default_from_email.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="alert alert-info mt-4">
+                <strong>Security Note:</strong> SMTP passwords are encrypted using Fernet symmetric encryption (AD-003).
+                The password is automatically encrypted before storage and decrypted when retrieved.
+            </div>
+            
+            <div class="d-flex justify-content-between mt-4">
+                <button type="submit" class="btn btn-primary">Save SMTP Configuration</button>
+                <a href="{% url 'mailinglists:detail' mailinglist.pk %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

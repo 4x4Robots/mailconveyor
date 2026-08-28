@@ -1,0 +1,135 @@
+{% extends "mailinglists/base.html" %}
+
+{% block title %}{{ mailinglist.name }} - MailConveyor{% endblock %}
+
+{% block mailinglists_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{{ mailinglist.name }}</h2>
+    <div>
+        {% if can_edit %}
+            <a href="{% url 'mailinglists:edit' mailinglist.pk %}" class="btn btn-warning">Edit</a>
+        {% endif %}
+        {% if can_manage_smtp and not smtp_config %}
+            <a href="{% url 'mailinglists:smtp_create' mailinglist.pk %}" class="btn btn-info">Add SMTP Config</a>
+        {% endif %}
+        {% if can_manage_smtp and smtp_config %}
+            <a href="{% url 'mailinglists:smtp_edit' smtp_config.pk %}" class="btn btn-secondary">Edit SMTP Config</a>
+        {% endif %}
+        {% if can_edit %}
+            <a href="{% url 'mailinglists:manage_access' mailinglist.pk %}" class="btn btn-primary">Manage Access</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Mailing List Details</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3">Description:</dt>
+                    <dd class="col-sm-9">{{ mailinglist.description|default:"No description" }}</dd>
+                    
+                    <dt class="col-sm-3">Created By:</dt>
+                    <dd class="col-sm-9">{{ mailinglist.created_by.get_full_name|default:mailinglist.created_by.username }}</dd>
+                    
+                    <dt class="col-sm-3">Created At:</dt>
+                    <dd class="col-sm-9">{{ mailinglist.created_at|date:"Y-m-d H:i" }}</dd>
+                    
+                    <dt class="col-sm-3">Last Updated:</dt>
+                    <dd class="col-sm-9">{{ mailinglist.updated_at|date:"Y-m-d H:i" }}</dd>
+                </dl>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Users with Access</h5>
+            </div>
+            <div class="card-body">
+                {% if mailinglist.users_with_access.count > 0 %}
+                    <ul class="list-group">
+                        {% for user in mailinglist.users_with_access.all %}
+                            <li class="list-group-item">
+                                <strong>{{ user.get_full_name|default:user.username }}</strong> 
+                                (<em>{{ user.username }}</em>)
+                                {% if user.groups.first %}
+                                    - <span class="badge bg-{{ user.get_role|lower }} text-dark">{{ user.get_role }}</span>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted">No users have access to this mailing list.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>SMTP Configuration</h5>
+            </div>
+            <div class="card-body">
+                {% if smtp_config %}
+                    <dl class="row">
+                        <dt class="col-sm-4">Host:</dt>
+                        <dd class="col-sm-8">{{ smtp_config.host }}</dd>
+                        
+                        <dt class="col-sm-4">Port:</dt>
+                        <dd class="col-sm-8">{{ smtp_config.port }}</dd>
+                        
+                        <dt class="col-sm-4">Username:</dt>
+                        <dd class="col-sm-8">{{ smtp_config.username|default:"Not set" }}</dd>
+                        
+                        <dt class="col-sm-4">TLS:</dt>
+                        <dd class="col-sm-8">{% if smtp_config.use_tls %}✅ Yes{% else %}❌ No{% endif %}</dd>
+                        
+                        <dt class="col-sm-4">SSL:</dt>
+                        <dd class="col-sm-8">{% if smtp_config.use_ssl %}✅ Yes{% else %}❌ No{% endif %}</dd>
+                        
+                        <dt class="col-sm-4">From Email:</dt>
+                        <dd class="col-sm-8">{{ smtp_config.default_from_email|default:"Not set" }}</dd>
+                        
+                        <dt class="col-sm-4">Password:</dt>
+                        <dd class="col-sm-8">********** (encrypted with Fernet - AD-003)</dd>
+                    </dl>
+                {% else %}
+                    <p class="text-muted">No SMTP configuration for this mailing list.</p>
+                    {% if can_manage_smtp %}
+                        <a href="{% url 'mailinglists:smtp_create' mailinglist.pk %}" class="btn btn-primary btn-sm">Add SMTP Configuration</a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5>Permissions</h5>
+    </div>
+    <div class="card-body">
+        <p></p>
+            <strong>Your Role:</strong> 
+            <span class="badge bg-{{ user_role|lower }} text-dark">{{ user_role }}</span>
+        </p>
+        <p>
+            <strong>Your Access:</strong> 
+            {% if can_edit %}
+                <span class="badge bg-success">Can Edit</span>
+                <span class="badge bg-success">Can Manage SMTP</span>
+            {% else %}
+                <span class="badge bg-info">View Only</span>
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="{% url 'mailinglists:list' %}" class="btn btn-secondary">Back to Mailing Lists</a>
+</div>
+{% endblock %}

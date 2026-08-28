@@ -21,6 +21,7 @@ from django.views.generic.base import RedirectView
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
+    path('mailinglists/', include('mailinglists.urls')),
     # Redirect root to user list (for now)
     path('', RedirectView.as_view(url='accounts/users/'), name='home'),
 ]

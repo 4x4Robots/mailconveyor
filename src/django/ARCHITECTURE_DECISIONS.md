@@ -362,4 +362,3 @@ None currently. All critical decisions have been made for initial implementation
 | 2026-08-28 | Initial | Created document with decisions AD-001 through AD-009 |
 | 2026-08-28 | Updated | AD-005: Changed uniqueness constraint to (first_name, last_name, email) and added email deduplication requirement |
 | 2026-08-28 | Updated | AD-002: Simplified to use Django built-in User model with groups for roles |
-
