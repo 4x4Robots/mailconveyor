@@ -74,8 +74,7 @@ class RecipientListView(LoginRequiredMixin, ListView):
             queryset = queryset.filter(
                 Q(first_name__icontains=search_query) |
                 Q(last_name__icontains=search_query) |
-                Q(email__icontains=search_query) |
-                Q(get_full_name__icontains=search_query)
+                Q(email__icontains=search_query)
             )
         
         # Apply mailing list filter
