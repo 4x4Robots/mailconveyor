@@ -1,59 +1,71 @@
-{% extends "emails/base.html" %}
+{% extends "accounts/base.html" %}
 
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'emails:list' %}">Emails</a></li>
-<li class="breadcrumb-item active" aria-current="page">Delete Email</li>
-{% endblock %}
+{% block title %}Delete Email - MailConveyor{% endblock %}
 
-{% block emails_content %}
-<div class="row">
-    <div class="col-md-12">
-        <h1>Delete Email</h1>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-md-8 offset-md-2">
-        <div class="card">
-            <div class="card-header bg-danger text-white">
-                <h5>Confirm Deletion</h5>
+{% block content %}
+    {% if user.is_authenticated %}
+        <div class="col-md-10 main-content">
+            <div class="row">
+                <div class="col-md-12">
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'emails:dashboard' %}">Emails</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'emails:list' %}">All Emails</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Delete Email</li>
+                        </ol>
+                    </nav>
+                    <h1>Delete Email</h1>
+                </div>
             </div>
-            <div class="card-body">
-                <p>Are you sure you want to delete the email <strong>{{ object.subject }}</strong>?</p>
-                
-                <p>This action cannot be undone. All</p> associated queue entries and attachments will also be deleted.</p>
-                
-                <dl class="row">
-                    <dt class="col-sm-4">Subject:</dt>
-                    <dd class="col-sm-8">{{ object.subject }}</dd>
-                    
-                    <dt class="col-sm-4">From:</dt>
-                    <dd class="col-sm-8">{{ object.from_email }}</dd>
-                    
-                    <dt class="col-sm-4">Status:</dt>
-                    <dd class="col-sm-8">{{ object.status }}</dd>
-                    
-                    <dt class="col-sm-4">Created:</dt>
-                    <dd class="col-sm-8">{{ object.created_at|date:"Y-m-d H:i" }}</dd>
-                </dl>
-                
-                <form method="post">
-                    {% csrf_token %}
-                    <div class="row mt-4">
-                        <div class="col-md-6">
-                            <button type="submit" class="btn btn-danger">
-                                <i class="bi bi-trash"></i> Yes, Delete
-                            </button>
+
+            <div class="row">
+                <div class="col-md-8 offset-md-2">
+                    <div class="card">
+                        <div class="card-header bg-danger text-white">
+                            <h5>Confirm Deletion</h5>
                         </div>
-                        <div class="col-md-6 text-end">
-                            <a href="{% url 'emails:detail' object.pk %}" class="btn btn-secondary">
-                                <i class="bi bi-x"></i> Cancel
-                            </a>
+                        <div class="card-body">
+                            <p>Are you sure you want to delete the email <strong>{{ object.subject }}</strong>?</p>
+                            
+                            <p>This action cannot be undone. All associated queue entries and attachments will also be deleted.</p>
+                            
+                            <dl class="row">
+                                <dt class="col-sm-4">Subject:</dt>
+                                <dd class="col-sm-8">{{ object.subject }}</dd>
+                                
+                                <dt class="col-sm-4">From:</dt>
+                                <dd class="col-sm-8">{{ object.from_email }}</dd>
+                                
+                                <dt class="col-sm-4">Status:</dt>
+                                <dd class="col-sm-8">{{ object.status }}</dd>
+                                
+                                <dt class="col-sm-4">Created:</dt>
+                                <dd class="col-sm-8">{{ object.created_at|date:"Y-m-d H:i" }}</dd>
+                            </dl>
+                            
+                            <form method="post">
+                                {% csrf_token %}
+                                <div class="row mt-4">
+                                    <div class="col-md-6">
+                                        <button type="submit" class="btn btn-danger">
+                                            <i class="bi bi-trash"></i> Yes, Delete
+                                        </button>
+                                    </div>
+                                    <div class="col-md-6 text-end">
+                                        <a href="{% url 'emails:detail' object.pk %}" class="btn btn-secondary">
+                                            <i class="bi bi-x"></i> Cancel
+                                        </a>
+                                    </div>
+                                </div>
+                            </form>
                         </div>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
-    </div>
-</div>
+    {% else %}
+        <div class="col-12 main-content">
+            <p>Please log in to delete emails.</p>
+        </div>
+    {% endif %}
 {% endblock %}

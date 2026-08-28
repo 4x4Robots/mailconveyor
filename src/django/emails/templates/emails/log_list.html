@@ -1,147 +1,117 @@
-{% extends "emails/base.html" %}
+{% extends "accounts/base.html" %}
 
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'emails:list' %}">Emails</a></li>
-{% if email %}
-<li class="breadcrumb-item"><a href="{% url 'emails:detail' email.pk %}">{{ email.subject|truncatechars:30 }}</a></li>
-{% endif %}
-<li class="breadcrumb-item active" aria-current="page">Logs</li>
-{% endblock %}
+{% block title %}Email Logs - MailConveyor{% endblock %}
 
-{% block emails_content %}
-<div class="row">
-    <div class="col-md-12">
-        {% if email %}
-        <h1>Logs for {{ email.subject }}</h1>
-        {% else %}
-        <h1>Email Logs</h1>
-        {% endif %}
-    </div>
-</div>
-
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <h5>Filter Options</h5>
+{% block content %}
+    {% if user.is_authenticated %}
+        <div class="col-md-10 main-content">
+            <div class="row">
+                <div class="col-md-12">
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'emails:dashboard' %}">Emails</a></li>
+                            {% if email %}
+                            <li class="breadcrumb-item"><a href="{% url 'emails:list' %}">All Emails</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'emails:detail' email.pk %}">{{ email.subject|truncatechars:30 }}</a></li>
+                            {% endif %}
+                            <li class="breadcrumb-item active" aria-current="page">Logs</li>
+                        </ol>
+                    </nav>
+                    {% if email %}
+                    <h1>Logs for {{ email.subject }}</h1>
+                    {% else %}
+                    <h1>Email Logs</h1>
+                    {% endif %}
+                </div>
             </div>
-            <div class="card-body">
-                {% if not email %}
-                <form method="get" action="{% url 'emails:log_list' %}">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <select class="form-select" name="log_level">
-                                <option value="">All Levels</option>
-                                <option value="DEBUG">Debug</option>
-                                <option value="INFO">Info</option>
-                                <option value="WARNING">Warning</option>
-                                <option value="ERROR">Error</option>
-                                <option value="CRITICAL">Critical</option>
-                            </select>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Log Entries</h5>
                         </div>
-                        <div class="col-md-3">
-                            <select class="form-select" name="operation">
-                                <option value="">All Operations</option>
-                                <option value="CONNECT">SMTP Connection</option>
-                                <option value="AUTH">SMTP Authentication</option>
-                                <option value="SEND">Email Send</option>
-                                <option value="RETRY">Retry</option>
-                                <option value="BOUNCE">Bounce Handling</option>
-                                <option value="QUEUE">Queue Operation</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-filter"></i> Filter
-                            </button>
+                        <div class="card-body">
+                            {% if logs %}
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Time</th>
+                                            <th>Level</th>
+                                            <th>Operation</th>
+                                            <th>Email</th>
+                                            <th>Queue Entry</th>
+                                            <th>Message</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for log in logs %}
+                                        <tr>
+                                            <td>{{ log.created_at|date:"Y-m-d H:i:s" }}</td>
+                                            <td>
+                                                <span class="badge 
+                                                    {% if log.log_level == 'ERROR' %}bg-danger
+                                                    {% elif log.log_level == 'WARNING' %}bg-warning
+                                                    {% elif log.log_level == 'INFO' %}bg-info
+                                                    {% elif log.log_level == 'DEBUG' %}bg-secondary
+                                                    {% else %}bg-primary{% endif %}">
+                                                    {{ log.log_level }}
+                                                </span>
+                                            </td>
+                                            <td>{{ log.operation }}</td>
+                                            <td>
+                                                {% if log.email %}
+                                                <a href="{% url 'emails:detail' log.email.pk %}">
+                                                    {{ log.email.subject|truncatechars:30 }}
+                                                </a>
+                                                {% else %}
+                                                -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if log.queue_entry %}
+                                                {{ log.queue_entry.id }}
+                                                {% else %}
+                                                -
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ log.message|truncatechars:60 }}</td>
+                                            <td>
+                                                {% if log.email %}
+                                                <a href="{% url 'emails:email_logs' log.email.pk %}" class="btn btn-sm btn-info">
+                                                    <i class="bi bi-eye"></i> View
+                                                </a>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            {% include "pagination.html" with page=page_obj %}
+                            
+                            {% else %}
+                            <p>No log entries found.</p>
+                            {% endif %}
                         </div>
                     </div>
-                </form>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <h5>Log Entries</h5>
-            </div>
-            <div class="card-body">
-                {% if logs %}
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover">
-                        <thead>
-                            <tr>
-                                <th>Time</th>
-                                <th>Level</th>
-                                <th>Operation</th>
-                                <th>Email</th>
-                                <th>Queue Entry</th>
-                                <th>Message</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for log in logs %}
-                            <tr>
-                                <td>{{ log.created_at|date:"Y-m-d H:i:s" }}</td>
-                                <td>
-                                    <span class="badge 
-                                        {% if log.log_level == 'ERROR' %}bg-danger
-                                        {% elif log.log_level == 'WARNING' %}bg-warning
-                                        {% elif log.log_level == 'INFO' %}bg-info
-                                        {% elif log.log_level == 'DEBUG' %}bg-secondary
-                                        {% else %}bg-primary{% endif %}">
-                                        {{ log.log_level }}
-                                    </span>
-                                </td>
-                                <td>{{ log.operation }}</td>
-                                <td>
-                                    {% if log.email %}
-                                    <a href="{% url 'emails:detail' log.email.pk %}">
-                                        {{ log.email.subject|truncatechars:30 }}
-                                    </a>
-                                    {% else %}
-                                    -
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if log.queue_entry %}
-                                    {{ log.queue_entry.id }}
-                                    {% else %}
-                                    -
-                                    {% endif %}
-                                </td>
-                                <td>{{ log.message|truncatechars:60 }}</td>
-                                <td>
-                                    <a href="{% url 'emails:email_logs' log.email.pk %}" class="btn btn-sm btn-info">
-                                        <i class="bi bi-eye"></i> View
-                                    </a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
                 </div>
-                
-                {% include "pagination.html" with page=page_obj %}
-                
-                {% else %}
-                <p>No log entries found.</p>
-                {% endif %}
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-md-12">
+                    <a href="{% if email %}{% url 'emails:detail' email.pk %}{% else %}{% url 'emails:list' %}{% endif %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Back
+                    </a>
+                </div>
             </div>
         </div>
-    </div>
-</div>
-
-<div class="row mt-4">
-    <div class="col-md-12">
-        <a href="{% if email %}{% url 'emails:detail' email.pk %}{% else %}{% url 'emails:list' %}{% endif %}" class="btn btn-secondary">
-            <i class="bi bi-arrow-left"></i> Back
-        </a>
-    </div>
-</div>
+    {% else %}
+        <div class="col-12 main-content">
+            <p>Please log in to access logs.</p>
+        </div>
+    {% endif %}
 {% endblock %}

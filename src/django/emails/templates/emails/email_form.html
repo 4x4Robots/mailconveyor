@@ -1,148 +1,160 @@
-{% extends "emails/base.html" %}
+{% extends "accounts/base.html" %}
 
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'emails:list' %}">Emails</a></li>
-<li class="breadcrumb-item active" aria-current="page">{{ action|default:"Compose" }} Email</li>
-{% endblock %}
+{% block title %}{{ action|default:"Compose" }} Email - MailConveyor{% endblock %}
 
-{% block emails_content %}
-<div class="row">
-    <div class="col-md-12">
-        <h1>{{ action|default:"Compose" }} Email</h1>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <h5>Email Composition</h</h5>5>
+{% block content %}
+    {% if user.is_authenticated %}
+        <div class="col-md-10 main-content">
+            <div class="row">
+                <div class="col-md-12">
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'emails:dashboard' %}">Emails</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'emails:list' %}">All Emails</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">{{ action|default:"Compose" }} Email</li>
+                        </ol>
+                    </nav>
+                    <h1>{{ action|default:"Compose" }} Email</h1>
+                </div>
             </div>
-            <div class="card-body">
-                <form method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.subject.id_for_label }}" class="form-label">Subject *</label>
-                                {{ form.subject }}
-                                {% if form.subject.errors %}
-                                <div class="text-danger">
-                                    {{ form.subject.errors }}
+
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Email Composition</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.subject.id_for_label }}" class="form-label">Subject *</label>
+                                            {{ form.subject }}
+                                            {% if form.subject.errors %}
+                                            <div class="text-danger">
+                                                {{ form.subject.errors }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.from_email.id_for_label }}" class="form-label">From Email *</label>
+                                            {{ form.from_email }}
+                                            {% if form.from_email.errors %}
+                                            <div class="text-danger">
+                                                {{ form.from_email.errors }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="mb-3">
+                                            <label for="{{ form.body.id_for_label }}" class="form-label">Body *</label>
+                                            {{ form.body }}
+                                            {% if form.body.errors %}
+                                            <div class="text-danger">
+                                                {{ form.body.errors }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                {{ form.is_html }}
+                                                <label class="form-check-label" for="{{ form.is_html.id_for_label }}">
+                                                    HTML Email
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.template.id_for_label }}" class="form-label">Template</label>
+                                            {{ form.template }}
+                                            {% if form.template.errors %}
+                                            <div class="text-danger">
+                                                {{ form.template.errors }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.recipients.id_for_label }}" class="form-label">
+                                                Individual Recipients
+                                            </label>
+                                            {{ form.recipients }}
+                                            <small class="form-text text-muted">
+                                                Select individual recipients to send to.
+                                            </small>
+                                            {% if form.recipients.errors %}
+                                            <div class="text-danger">
+                                                {{ form.recipients.errors }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.mailing_lists.id_for_label }}" class="form-label">
+                                                Mailing Lists
+                                            </label>
+                                            {{ form.mailing_lists }}
+                                            <small class="form-text text-muted">
+                                                Select mailing lists to send to all members.
+                                            </small>
+                                            {% if form.mailing_lists.errors %}
+                                            <div class="text-danger">
+                                                {{ form.mailing_lists.errors }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {% if form.non_field_errors %}
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="alert alert-danger">
+                                            {{ form.non_field_errors }}
+                                        </div>
+                                    </div>
                                 </div>
                                 {% endif %}
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.from_email.id_for_label }}" class="form-label">From Email *</label>
-                                {{ form.from_email }}
-                                {% if form.from_email.errors %}
-                                <div class="text-danger">
-                                    {{ form.from_email.errors }}
+                                
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-save"></i> Save as Draft
+                                        </button>
+                                        <a href="{% url 'emails:list' %}" class="btn btn-secondary">
+                                            <i class="bi bi-x"></i> Cancel
+                                        </a>
+                                    </div>
                                 </div>
-                                {% endif %}
-                            </div>
+                            </form>
                         </div>
                     </div>
-                    
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="mb-3">
-                                <label for="{{ form.body.id_for_label }}" class="form-label">Body *</label>
-                                {{ form.body }}
-                                {% if form.body.errors %}
-                                <div class="text-danger">
-                                    {{ form.body.errors }}
-                                </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <div class="form-check">
-                                    {{ form.is_html }}
-                                    <label class="form-check-label" for="{{ form.is_html.id_for_label }}">
-                                        HTML Email
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.template.id_for_label }}" class="form-label">Template</label>
-                                {{ form.template }}
-                                {% if form.template.errors %}
-                                <div class="text-danger">
-                                    {{ form.template.errors }}
-                                </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.recipients.id_for_label }}" class="form-label">
-                                    Individual Recipients
-                                </label>
-                                {{ form.recipients }}
-                                <small class="form-text text-muted">
-                                    Select individual recipients to send to.
-                                </small>
-                                {% if form.recipients.errors %}
-                                <div class="text-danger">
-                                    {{ form.recipients.errors }}
-                                </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.mailing_lists.id_for_label }}" class="form-label">
-                                    Mailing Lists
-                                </label>
-                                {{ form.mailing_lists }}
-                                <small class="form-text text-muted">
-                                    Select mailing lists to send to all members.
-                                </small>
-                                {% if form.mailing_lists.errors %}
-                                <div class="text-danger">
-                                    {{ form.mailing_lists.errors }}
-                                </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    {% if form.non_field_errors %}
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="alert alert-danger">
-                                {{ form.non_field_errors }}
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-                    
-                    <div class="row">
-                        <div class="col-md-12">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-save"></i> Save as Draft
-                            </button>
-                            <a href="{% url 'emails:list' %}" class="btn btn-secondary">
-                                <i class="bi bi-x"></i> Cancel
-                            </a>
-                        </div>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
-    </div>
-</div>
+    {% else %}
+        <div class="col-12 main-content">
+            <p>Please log in to compose emails.</p>
+        </div>
+    {% endif %}
 {% endblock %}
