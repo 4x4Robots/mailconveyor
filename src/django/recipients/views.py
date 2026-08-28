@@ -35,7 +35,7 @@ def is_manager(user):
 
 def get_accessible_mailing_lists(user):
     """Get mailing lists that the user has access to."""
-    if user.is_app_admin:
+    if user.is_app_admin or user.is_app_manager:
         return MailingList.objects.all()
     elif user.is_authenticated:
         return MailingList.objects.filter(
@@ -45,9 +45,20 @@ def get_accessible_mailing_lists(user):
 
 
 def get_accessible_recipients(user):
-    """Get recipients that the user has access to (via accessible mailing lists)."""
-    accessible_lists = get_accessible_mailing_lists(user)
-    return Recipient.objects.filter(mailing_lists__in=accessible_lists).distinct()
+    """Get recipients that the user has access to.
+    
+    ADMINS and MANAGERS can see all recipients.
+    USERS can only see recipients associated with their accessible mailing lists.
+    """
+    if user.is_app_admin or user.is_app_manager:
+        # Admins and managers can see all recipients
+        return Recipient.objects.all()
+    elif user.is_authenticated:
+        # Regular users can only see recipients in mailing lists they have access to
+        accessible_lists = get_accessible_mailing_lists(user)
+        return Recipient.objects.filter(mailing_lists__in=accessible_lists).distinct()
+    else:
+        return Recipient.objects.none()
 
 
 class RecipientListView(LoginRequiredMixin, ListView):
@@ -61,15 +72,12 @@ class RecipientListView(LoginRequiredMixin, ListView):
     
     def get_queryset(self):
         """Filter recipients by user access."""
-        queryset = super().get_queryset()
+        # Start with accessible recipients based on user permissions
+        queryset = get_accessible_recipients(self.request.user)
         
         # Get search query
         search_query = self.request.GET.get('search_query', '')
         mailing_list_id = self.request.GET.get('mailing_list', '')
-        
-        # Filter by accessible mailing lists
-        accessible_lists = get_accessible_mailing_lists(self.request.user)
-        queryset = queryset.filter(mailing_lists__in=accessible_lists).distinct()
         
         # Apply search filter
         if search_query:
@@ -83,9 +91,14 @@ class RecipientListView(LoginRequiredMixin, ListView):
         if mailing_list_id:
             try:
                 mailing_list = MailingList.objects.get(pk=mailing_list_id)
-                # Check if user has access to this mailing list
-                if mailing_list in accessible_lists:
+                # For admins and managers, allow filtering by any mailing list
+                # For regular users, only allow filtering by accessible mailing lists
+                if self.request.user.is_app_admin or self.request.user.is_app_manager:
                     queryset = queryset.filter(mailing_lists=mailing_list)
+                else:
+                    accessible_lists = get_accessible_mailing_lists(self.request.user)
+                    if mailing_list in accessible_lists:
+                        queryset = queryset.filter(mailing_lists=mailing_list)
             except MailingList.DoesNotExist:
                 pass
         
@@ -167,11 +180,9 @@ class RecipientUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         if self.request.user.is_app_admin:
             return True
         
-        # Managers can edit recipients they created or that are in mailing lists they manage
+        # Managers can edit all recipients (since they can see all recipients)
         if self.request.user.is_app_manager:
-            # Check if recipient is in any mailing list the user has access to
-            accessible_lists = get_accessible_mailing_lists(self.request.user)
-            return recipient.mailing_lists.filter(pk__in=accessible_lists.values_list('pk', flat=True)).exists()
+            return True
         
         # Regular users can only edit recipients they created
         return recipient.created_by == self.request.user
@@ -215,11 +226,11 @@ class RecipientDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         """Check if user has permission to view this recipient."""
         recipient = self.get_object()
         
-        # Admins can view all recipients
-        if self.request.user.is_app_admin:
+        # Admins and managers can view all recipients
+        if self.request.user.is_app_admin or self.request.user.is_app_manager:
             return True
         
-        # Check if recipient is in any mailing list the user has access to
+        # Regular users can only view recipients in mailing lists they have access to
         accessible_lists = get_accessible_mailing_lists(self.request.user)
         return recipient.mailing_lists.filter(pk__in=accessible_lists.values_list('pk', flat=True)).exists()
     
@@ -479,11 +490,8 @@ def export_recipients_view(request):
     """
     Export recipients to a CSV file.
     """
-    # Get accessible recipients
-    accessible_lists = get_accessible_mailing_lists(request.user)
-    recipients = Recipient.objects.filter(
-        mailing_lists__in=accessible_lists
-    ).distinct().order_by('last_name', 'first_name', 'email')
+    # Get accessible recipients based on user permissions
+    recipients = get_accessible_recipients(request.user).order_by('last_name', 'first_name', 'email')
     
     # Get filter parameters
     mailing_list_id = request.GET.get('mailing_list', '')
@@ -528,9 +536,11 @@ def manage_recipient_mailing_lists_view(request, pk):
     """
     recipient = get_object_or_404(Recipient, pk=pk)
     
+    # Get accessible mailing lists for permission checks
+    accessible_lists = get_accessible_mailing_lists(request.user)
+    
     # Check permissions
-    if not request.user.is_app_admin:
-        accessible_lists = get_accessible_mailing_lists(request.user)
+    if not request.user.is_app_admin and not request.user.is_app_manager:
         if not recipient.mailing_lists.filter(pk__in=accessible_lists.values_list('pk', flat=True)).exists():
             messages.error(request, "You don't have permission to manage this recipient.")
             return redirect('recipients:list')
@@ -540,7 +550,7 @@ def manage_recipient_mailing_lists_view(request, pk):
         selected_lists = request.POST.getlist('mailing_lists')
         
         # Validate that user has access to all selected lists
-        if not request.user.is_app_admin:
+        if not request.user.is_app_admin and not request.user.is_app_manager:
             accessible_list_ids = set(accessible_lists.values_list('pk', flat=True))
             for list_id in selected_lists:
                 if int(list_id) not in accessible_list_ids:
@@ -555,7 +565,7 @@ def manage_recipient_mailing_lists_view(request, pk):
         return redirect('recipients:detail', pk=pk)
     
     # Get accessible mailing lists for the form
-    if request.user.is_app_admin:
+    if request.user.is_app_admin or request.user.is_app_manager:
         all_mailing_lists = MailingList.objects.all()
     else:
         all_mailing_lists = accessible_lists

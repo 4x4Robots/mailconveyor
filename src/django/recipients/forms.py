@@ -43,8 +43,8 @@ class RecipientForm(forms.ModelForm):
             from django.db.models import Q
             
             # AD-002: Filter by object-level permissions
-            if user.is_app_admin:
-                # Admins can see all mailing lists
+            if user.is_app_admin or user.is_app_manager:
+                # Admins and managers can see all mailing lists
                 mailing_lists = MailingList.objects.all()
             else:
                 # Other users can only see mailing lists they have access to
@@ -129,7 +129,7 @@ class RecipientSearchForm(forms.Form):
             from mailinglists.models import MailingList
             from django.db.models import Q
             
-            if user.is_app_admin:
+            if user.is_app_admin or user.is_app_manager:
                 mailing_lists = MailingList.objects.all()
             else:
                 mailing_lists = MailingList.objects.filter(
@@ -175,7 +175,7 @@ class CSVImportForm(forms.Form):
             from mailinglists.models import MailingList
             from django.db.models import Q
             
-            if user.is_app_admin:
+            if user.is_app_admin or user.is_app_manager:
                 mailing_lists = MailingList.objects.all()
             else:
                 mailing_lists = MailingList.objects.filter(
