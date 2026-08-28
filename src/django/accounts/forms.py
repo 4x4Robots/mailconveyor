@@ -51,21 +51,17 @@ class CustomUserChangeForm(UserChangeForm):
 
 
 class CustomAuthenticationForm(AuthenticationForm):
-    """Custom authentication form using email instead of username."""
+    """Custom authentication form using email or username."""
     
     username = forms.CharField(
         label=_("Email or Username"),
-        widget=forms.TextInput(attrs={'class': 'form-control', 'autofocus': True})
+        widget=forms.TextInput(attrs={'class': 'form-control', 'autofocus': True, 'placeholder': 'Enter your email or username'})
     )
     password = forms.CharField(
         label=_("Password"),
         strip=False,
-        widget=forms.PasswordInput(attrs={'class': 'form-control'})
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Enter your password'})
     )
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['username'].label = _("Email or Username")
 
 
 class ProfileUpdateForm(forms.ModelForm):

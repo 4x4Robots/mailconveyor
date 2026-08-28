@@ -18,19 +18,8 @@ def login_view(request):
             username_or_email = form.cleaned_data.get('username')
             password = form.cleaned_data.get('password')
             
-            # Try to authenticate with username_or_email as both username and email
-            user = None
-            # First try as username
+            # The custom backend will handle both username and email
             user = authenticate(request, username=username_or_email, password=password)
-            
-            # If that fails, try to find user by email and authenticate with username
-            if user is None:
-                try:
-                    from .models import CustomUser
-                    user_obj = CustomUser.objects.get(email=username_or_email)
-                    user = authenticate(request, username=user_obj.username, password=password)
-                except CustomUser.DoesNotExist:
-                    pass
             
             if user is not None:
                 login(request, user)
@@ -59,27 +48,27 @@ class UserListView(LoginRequiredMixin, ListView):
     template_name = 'accounts/user_list.html'
     context_object_name = 'users'
     paginate_by = 20
-    
+
     def get_queryset(self):
         queryset = super().get_queryset()
-        
+
         # Filter by role if specified
         role_filter = self.request.GET.get('role')
         if role_filter and role_filter in dict(CustomUser.Role.choices):
             queryset = queryset.filter(role=role_filter)
-        
+
         # ADMIN can see all users
         if self.request.user.is_admin():
             return queryset.order_by('email')
-        
+
         # MANAGER can see all users but not edit them
         elif self.request.user.is_manager():
             return queryset.order_by('email')
-        
+
         # Regular USER can only see themselves
         else:
             return queryset.filter(pk=self.request.user.pk)
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['roles'] = CustomUser.Role.choices
@@ -92,15 +81,15 @@ class UserCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = CustomUser
     form_class = CustomUserCreationForm
     template_name = 'accounts/user_form.html'
-    success_url = reverse_lazy('user_list')
-    
+    success_url = reverse_lazy('accounts:user_list')
+
     def test_func(self):
         return self.request.user.is_admin()
-    
+
     def handle_no_permission(self):
         messages.error(self.request, "You do not have permission to create users.")
         return redirect('accounts:user_list')
-    
+
     def form_valid(self, form):
         messages.success(self.request, f"User {form.cleaned_data['email']} created successfully!")
         return super().form_valid(form)
@@ -111,8 +100,8 @@ class UserUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = CustomUser
     form_class = CustomUserChangeForm
     template_name = 'accounts/user_form.html'
-    success_url = reverse_lazy('user_list')
-    
+    success_url = reverse_lazy('accounts:user_list')
+
     def test_func(self):
         user = self.get_object()
         # ADMIN can edit anyone
@@ -120,11 +109,11 @@ class UserUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
             return True
         # MANAGER and USER can only edit themselves
         return user == self.request.user
-    
+
     def handle_no_permission(self):
         messages.error(self.request, "You do not have permission to edit this user.")
         return redirect('accounts:user_list')
-    
+
     def form_valid(self, form):
         messages.success(self.request, f"User {form.instance.email} updated successfully!")
         return super().form_valid(form)
@@ -134,15 +123,15 @@ class UserDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     """Delete user (ADMIN only)."""
     model = CustomUser
     template_name = 'accounts/user_confirm_delete.html'
-    success_url = reverse_lazy('user_list')
-    
+    success_url = reverse_lazy('accounts:user_list')
+
     def test_func(self):
         return self.request.user.is_admin()
-    
+
     def handle_no_permission(self):
         messages.error(self.request, "You do not have permission to delete users.")
         return redirect('accounts:user_list')
-    
+
     def delete(self, request, *args, **kwargs):
         user = self.get_object()
         if user == request.user:
@@ -163,7 +152,7 @@ def profile_view(request):
             return redirect('accounts:profile')
     else:
         form = ProfileUpdateForm(instance=request.user)
-    
+
     return render(request, 'accounts/profile.html', {'form': form})
 
 
@@ -171,7 +160,7 @@ def profile_view(request):
 def change_password_view(request):
     """Change own password."""
     from django.contrib.auth.forms import PasswordChangeForm
-    
+
     if request.method == 'POST':
         form = PasswordChangeForm(request.user, request.POST)
         if form.is_valid():
@@ -182,5 +171,5 @@ def change_password_view(request):
             return redirect('accounts:profile')
     else:
         form = PasswordChangeForm(request.user)
-    
+
     return render(request, 'accounts/change_password.html', {'form': form})

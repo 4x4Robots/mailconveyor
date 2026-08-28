@@ -140,7 +140,7 @@ AUTH_USER_MODEL = 'accounts.CustomUser'
 
 # Authentication backends (AD-002: django-guardian for object-level permissions)
 AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
+    'accounts.backends.EmailOrUsernameModelBackend',
     'guardian.backends.ObjectPermissionBackend',
 ]
 
