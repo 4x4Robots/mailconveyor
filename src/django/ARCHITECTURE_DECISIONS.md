@@ -21,30 +21,41 @@ This file tracks all significant architectural decisions for the MailConveyor pr
 ---
 
 ### AD-002: Authentication & Object-Level Permissions
-**Status**: ✅ Accepted
+**Status**: ✅ Accepted (Updated 2026-08-28)
 **Date**: 2026-08-28
 **Context**: User access control for mailing lists
 
-**Decision**: Use **django-guardian** for object-level permissions.
+**Decision**: 
+1. Use **email-only authentication** (no username field)
+2. Use **django-guardian** for object-level permissions
 
 **Rationale**: 
+- Email-only authentication simplifies the user experience and data model
 - Need fine-grained access control (users should only access specific mailing lists)
 - Django's built-in permissions are model-level only, not object-level
 - Guardian provides object-level permissions out of the box
 
 **Consequences**:
+- CustomUser model uses `email` as `USERNAME_FIELD`
+- No username field in the user model
 - Add `django-guardian` as a dependency
 - Users will have permissions on specific MailingList instances
 - Permission checks will use Guardian's API: `user.has_perm('view_mailinglist', mailinglist)`
-- Need to set up Guardian's authentication backend
+- Need to set up Guardian's authentication backend alongside Django's ModelBackend
 
 **Implementation Notes**:
 ```python
+# models.py
+class CustomUser(AbstractUser):
+    username = None
+    email = models.EmailField(unique=True)
+    USERNAME_FIELD = 'email'
+    
 # settings.py
-AUTHENTICATION_BACKENDS = (
+AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'guardian.backends.ObjectPermissionBackend',
-)
+]
 ```
 
 ---
@@ -294,7 +305,7 @@ class Command(BaseCommand):
 | ID | Decision | Status | Date |
 |----|----------|--------|------|
 | AD-001 | Use Django native capabilities | ✅ | 2026-08-28 |
-| AD-002 | django-guardian for object-level permissions | ✅ | 2026-08-28 |
+| AD-002 | Email-only authentication + django-guardian for object-level permissions | ✅ | 2026-08-28 |
 | AD-003 | Fernet encryption for SMTP passwords | ✅ | 2026-08-28 |
 | AD-004 | Sync now, async queue later with retry logic | ✅ | 2026-08-28 |
 | AD-005 | Recipient uniqueness by (first_name, last_name, email), deduplicate emails by address | ✅ | 2026-08-28 |
@@ -333,3 +344,4 @@ None currently. All critical decisions have been made for initial implementation
 |------|--------|---------|
 | 2026-08-28 | Initial | Created document with decisions AD-001 through AD-009 |
 | 2026-08-28 | Updated | AD-005: Changed uniqueness constraint to (first_name, last_name, email) and added email deduplication requirement |
+| 2026-08-28 | Updated | AD-002: Added email-only authentication decision, removed username field from user model |

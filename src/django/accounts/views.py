@@ -15,20 +15,20 @@ def login_view(request):
     if request.method == 'POST':
         form = CustomAuthenticationForm(request, data=request.POST)
         if form.is_valid():
-            username_or_email = form.cleaned_data.get('username')
+            email = form.cleaned_data.get('username')  # username field contains email
             password = form.cleaned_data.get('password')
             
-            # The custom backend will handle both username and email
-            user = authenticate(request, username=username_or_email, password=password)
+            # Authenticate using email as username field
+            user = authenticate(request, username=email, password=password)
             
             if user is not None:
                 login(request, user)
                 messages.success(request, f"Welcome back, {user.email}!")
                 return redirect('accounts:user_list')
             else:
-                messages.error(request, "Invalid username/email or password.")
+                messages.error(request, "Invalid email or password.")
         else:
-            messages.error(request, "Invalid username/email or password.")
+            messages.error(request, "Invalid email or password.")
     else:
         form = CustomAuthenticationForm()
     
