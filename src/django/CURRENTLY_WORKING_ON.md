@@ -66,21 +66,28 @@ The MailConveyor system will be organized into **4 main Django apps**, each with
 
 **Models**:
 - `Recipient`
-  - Fields: first_name, last_name, email, created_at, updated_at, created_by (ForeignKey to CustomUser)
+  - Fields: first_name, last_name, email, created_at, updated_at, created_by (ForeignKey to User)
   - Relationship: Many-to-many to MailingList (mailing_lists)
-  - Constraints: email must be unique
+  - Constraints: (first_name, last_name, email) must be unique (AD-005)
+- `RecipientImportLog`
+  - Fields: file_name, uploaded_by, status, total_records, successful_records, failed_records, error_message, created_at, completed_at
 
 **Views**:
-- Recipient list (filtered by mailing list access)
-- Add/remove recipients from lists
-- Create/edit recipient details
-- Import/export recipients (CSV)
+- RecipientListView: List all recipients (filtered by mailing list access)
+- RecipientCreateView: Create new recipient
+- RecipientUpdateView: Edit existing recipient
+- RecipientDetailView: View recipient details
+- RecipientDeleteView: Delete recipient
+- import_recipients_view: Import recipients from CSV
+- export_recipients_view: Export recipients to CSV
+- manage_recipient_mailing_lists_view: Manage which mailing lists a recipient belongs to
 
 **Permissions**:
 - ADMIN: Full CRUD on all recipients
-- MANAGER/USER: Can add/remove/edit recipients for lists they have access to
+- MANAGER: Can create/edit recipients for lists they have access to
+- USER: Can view recipients for lists they have access to
 
-**Status**: ⬜ Not started
+**Status**: ✅ Complete
 
 ---
 
@@ -176,8 +183,8 @@ The MailConveyor system will be organized into **4 main Django apps**, each with
 2. ✅ Create `accounts` app with Django built-in User model + groups for roles
 3. ✅ Set up authentication and basic user management
 4. ✅ Create `mailinglists` app with MailingList and SmtpConfig models
-5. ⬜ Create `recipients` app with Recipient model
-6. ⬜ Set up basic permissions system
+5. ✅ Create `recipients` app with Recipient model
+6. ✅ Set up basic permissions system
 
 ### Phase 2: Core Features (Priority: HIGH)
 7. ⬜ Create `emails` app with Email model
@@ -201,8 +208,8 @@ The MailConveyor system will be organized into **4 main Django apps**, each with
 ## 📝 Current Status
 
 - **Last Updated**: 2026-08-28
-- **Current Focus**: MailingLists app implementation
-- **Next Immediate Task**: Create the recipients app
+- **Current Focus**: Recipients app implementation
+- **Next Immediate Task**: Verify recipients app in local dev server, then proceed to emails app
 
 ---
 

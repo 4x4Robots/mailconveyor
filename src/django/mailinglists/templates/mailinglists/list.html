@@ -38,6 +38,7 @@
                             <th>Created By</th>
                             <th>Created At</th>
                             <th>Users with Access</th>
+                            <th>Recipients</th>
                             <th>SMTP Config</th>
                             <th>Actions</th>
                         </tr>
@@ -52,6 +53,7 @@
                                 <td>{{ mailinglist.created_by.get_full_name|default:mailinglist.created_by.username }}</td>
                                 <td>{{ mailinglist.created_at|date:"Y-m-d H:i" }}</td>
                                 <td>{{ mailinglist.users_with_access.count }}</td>
+                                <td>{{ mailinglist.recipients.count }}</td>
                                 <td>
                                     {% if mailinglist.smtp_config.first %}
                                         <span class="badge bg-success">Configured</span>

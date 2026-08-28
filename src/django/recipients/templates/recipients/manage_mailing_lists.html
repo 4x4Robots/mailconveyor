@@ -1,0 +1,76 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}Manage Mailing Lists - MailConveyor{% endblock %}
+
+{% block content %}
+    {% if user.is_authenticated %}
+        <div class="col-md-10 main-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Manage Mailing Lists for {{ recipient.get_full_name }}</h2>
+                <a href="{% url 'recipients:detail' recipient.pk %}" class="btn btn-secondary">Back to Recipient</a>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5>Recipient Information</h5>
+                    <dl class="row">
+                        <dt class="col-sm-3">Name:</dt>
+                        <dd class="col-sm-9">{{ recipient.first_name }} {{ recipient.last_name }}</dd>
+                        
+                        <dt class="col-sm-3">Email:</dt>
+                        <dd class="col-sm-9">{{ recipient.email }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Select Mailing Lists</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">
+                                Available Mailing Lists
+                                <small class="text-muted">(Select all that apply)</small>
+                            </label>
+                            
+                            {% if all_mailing_lists %}
+                                <div class="list-group">
+                                    {% for mailing_list in all_mailing_lists %}
+                                        <label class="list-group-item">
+                                            <input class="form-check-input me-2" 
+                                                   type="checkbox" 
+                                                   name="mailing_lists" 
+                                                   value="{{ mailing_list.pk }}"
+                                                   {% if mailing_list in recipient.mailing_lists.all %}checked{% endif %}>
+                                            <strong>{{ mailing_list.name }}</strong>
+                                            <small class="text-muted d-block">
+                                                {{ mailing_list.description|truncatechars:100 }}
+                                            </small>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="text-muted">No mailing lists available.</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'recipients:detail' recipient.pk %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="col-12 main-content">
+            <p>Please log in to manage mailing lists.</p>
+        </div>
+    {% endif %}
+{% endblock %}

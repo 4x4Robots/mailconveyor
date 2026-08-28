@@ -1,0 +1,15 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}Recipients - MailConveyor{% endblock %}
+
+{% block content %}
+    {% if user.is_authenticated %}
+        <div class="col-md-10 main-content">
+            {% block recipient_content %}{% endblock %}
+        </div>
+    {% else %}
+        <div class="col-12 main-content">
+            <p>Please log in to view recipients.</p>
+        </div>
+    {% endif %}
+{% endblock %}

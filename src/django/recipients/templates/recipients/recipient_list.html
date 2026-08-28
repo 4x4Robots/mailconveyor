@@ -1,0 +1,157 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}Recipients - MailConveyor{% endblock %}
+
+{% block content %}
+    {% if user.is_authenticated %}
+        <div class="col-md-10 main-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Recipients</h2>
+                <div class="btn-group" role="group">
+                    {% if user.is_app_manager %}
+                        <a href="{% url 'recipients:create' %}" class="btn btn-primary">Create Recipient</a>
+                        <a href="{% url 'recipients:import' %}" class="btn btn-secondary">Import CSV</a>
+                        <a href="{% url 'recipients:export' %}" class="btn btn-success">Export CSV</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <p class="card-text">
+                        {% if is_admin %}
+                            <strong>Role:</strong> <span class="badge bg-danger">Admin</span>
+                            - You can view and manage all recipients.
+                        {% elif is_manager %}
+                            <strong>Role:</strong> <span class="badge bg-warning text-dark">Manager</span>
+                            - You can view and manage recipients for mailing lists you have access to.
+                        {% else %}
+                            <strong>Role:</strong> <span class="badge bg-info">User</span>
+                            - You can view recipients for mailing lists you have access to.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Search and Filter Form -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Search & Filter</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-5">
+                            <label for="search_query" class="form-label">Search</label>
+                            {{ search_form.search_query }}
+                        </div>
+                        <div class="col-md-5">
+                            <label for="mailing_list" class="form-label">Mailing List</label>
+                            {{ search_form.mailing_list }}
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-search"></i> Search
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Mailing Lists</th>
+                            <th>Created By</th>
+                            <th>Created At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for recipient in recipients %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'recipients:detail' recipient.pk %}">
+                                        {{ recipient.first_name }} {{ recipient.last_name }}
+                                    </a>
+                                </td>
+                                <td>{{ recipient.email }}</td>
+                                <td>
+                                    {% for mailing_list in recipient.mailing_lists.all %}
+                                        <span class="badge bg-primary">{{ mailing_list.name }}</span>
+                                    {% endfor %}
+                                </td>
+                                <td>{{ recipient.created_by.get_full_name|default:recipient.created_by.username }}</td>
+                                <td>{{ recipient.created_at|date:"Y-m-d H:i" }}</td>
+                                <td>
+                                    <a href="{% url 'recipients:detail' recipient.pk %}" 
+                                       class="btn btn-sm btn-info" title="View">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    {% if is_admin or is_manager %}
+                                        <a href="{% url 'recipients:edit' recipient.pk %}" 
+                                           class="btn btn-sm btn-warning" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        {% if is_admin %}
+                                            <a href="{% url 'recipients:delete' recipient.pk %}" 
+                                               class="btn btn-sm btn-danger" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        {% endif %}
+                                    {% endif %}
+                                    {% if is_admin or is_manager %}
+                                        <a href="{% url 'recipients:manage_mailing_lists' recipient.pk %}" 
+                                           class="btn btn-sm btn-secondary" title="Manage Mailing Lists">
+                                            <i class="bi bi-envelope"></i>
+                                        </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center">No recipients found.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if is_paginated %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1">&laquo; First</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">&lsaquo; Previous</a>
+                        </li>
+                    {% endif %}
+                    
+                    <li class="page-item disabled">
+                        <span class="page-link">
+                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                        </span>
+                    </li>
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next &rsaquo;</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    {% else %}
+        <div class="col-12 main-content">
+            <p>Please log in to view recipients.</p>
+        </div>
+    {% endif %}
+{% endblock %}

@@ -22,6 +22,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
     path('mailinglists/', include('mailinglists.urls')),
+    path('recipients/', include('recipients.urls')),
     # Redirect root to user list (for now)
     path('', RedirectView.as_view(url='accounts/users/'), name='home'),
 ]

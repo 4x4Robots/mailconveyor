@@ -49,6 +49,14 @@
                                 <a class="nav-link" href="{% url 'mailinglists:create' %}">Create Mailing List</a>
                             </li>
                         {% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'recipients:list' %}">Recipients</a>
+                        </li>
+                        {% if user.is_app_manager %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'recipients:create' %}">Create Recipient</a>
+                            </li>
+                        {% endif %}
                     {% endif %}
                 </ul>
                 <ul class="navbar-nav">
@@ -96,6 +104,24 @@
                         {% if user.is_app_manager %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'mailinglists:create' %}">Create Mailing List</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                    <hr>
+                    <h5>Recipients</h5>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'recipients:list' %}">All Recipients</a>
+                        </li>
+                        {% if user.is_app_manager %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'recipients:create' %}">Create Recipient</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'recipients:import' %}">Import Recipients</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'recipients:export' %}">Export Recipients</a>
                             </li>
                         {% endif %}
                     </ul>
