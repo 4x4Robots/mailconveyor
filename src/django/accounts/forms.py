@@ -2,16 +2,13 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm, AuthenticationForm
 from django.contrib.auth.models import User, Group
 from django.utils.translation import gettext_lazy as _
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 
 
 class CustomUserCreationForm(UserCreationForm):
     """Form for creating new users (admin-only)."""
     
-    email = forms.EmailField(
-        label=_("Email"),
-        required=True,
-        widget=forms.EmailInput(attrs={'class': 'form-control'})
-    )
     first_name = forms.CharField(
         label=_("First Name"),
         required=True,
@@ -31,7 +28,17 @@ class CustomUserCreationForm(UserCreationForm):
     
     class Meta:
         model = User
-        fields = ('username', 'email', 'first_name', 'last_name', 'password1', 'password2')
+        fields = ('username', 'first_name', 'last_name', 'password1', 'password2')
+    
+    def clean_username(self):
+        """Validate that username is a valid email address."""
+        username = self.cleaned_data.get('username')
+        if username:
+            try:
+                validate_email(username)
+            except ValidationError:
+                raise forms.ValidationError(_("Username must be a valid email address."))
+        return username
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -43,11 +50,6 @@ class CustomUserCreationForm(UserCreationForm):
 class CustomUserChangeForm(UserChangeForm):
     """Form for updating user profiles."""
     
-    email = forms.EmailField(
-        label=_("Email"),
-        required=True,
-        widget=forms.EmailInput(attrs={'class': 'form-control'})
-    )
     first_name = forms.CharField(
         label=_("First Name"),
         required=True,
@@ -67,7 +69,7 @@ class CustomUserChangeForm(UserChangeForm):
     
     class Meta:
         model = User
-        fields = ('username', 'email', 'first_name', 'last_name', 'is_active')
+        fields = ('username', 'first_name', 'last_name', 'is_active')
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -95,11 +97,6 @@ class CustomAuthenticationForm(AuthenticationForm):
 class ProfileUpdateForm(forms.ModelForm):
     """Form for users to update their own profile."""
     
-    email = forms.EmailField(
-        label=_("Email"),
-        required=True,
-        widget=forms.EmailInput(attrs={'class': 'form-control'})
-    )
     first_name = forms.CharField(
         label=_("First Name"),
         required=True,
@@ -113,7 +110,17 @@ class ProfileUpdateForm(forms.ModelForm):
     
     class Meta:
         model = User
-        fields = ('username', 'first_name', 'last_name', 'email')
+        fields = ('username', 'first_name', 'last_name')
+    
+    def clean_username(self):
+        """Validate that username is a valid email address."""
+        username = self.cleaned_data.get('username')
+        if username:
+            try:
+                validate_email(username)
+            except ValidationError:
+                raise forms.ValidationError(_("Username must be a valid email address."))
+        return username
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

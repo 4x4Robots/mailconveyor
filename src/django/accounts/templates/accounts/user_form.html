@@ -14,23 +14,14 @@
                     {% csrf_token %}
                     
                     <div class="mb-3">
-                        <label for="id_username" class="form-label">Username *</label>
+                        <label for="id_username" class="form-label">Email (as Username) *</label>
                         {{ form.username }}
                         {% if form.username.errors %}
                             <div class="text-danger">
                                 {{ form.username.errors }}
                             </div>
                         {% endif %}
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="id_email" class="form-label">Email *</label>
-                        {{ form.email }}
-                        {% if form.email.errors %}
-                            <div class="text-danger">
-                                {{ form.email.errors }}
-                            </div>
-                        {% endif %}
+                        <small class="text-muted">Use a valid email address as username</small>
                     </div>
                     
                     <div class="row mb-3">
@@ -54,7 +45,7 @@
                         </div>
                     </div>
                     
-                    {% if request.user.is_admin %}
+                    {% if request.user.is_app_admin %}
                         <div class="mb-3">
                             <label for="id_role" class="form-label">Role *</label>
                             {{ form.role }}
