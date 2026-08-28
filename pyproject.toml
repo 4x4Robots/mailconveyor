@@ -26,6 +26,7 @@ test = [
 django = [
   "django>=6.1",
   "django-guardian>=3.4.0",
+    "cryptography>=50.0.1",
 ]
 
 # https://docs.pytest.org/en/stable/explanation/goodpractices.html
