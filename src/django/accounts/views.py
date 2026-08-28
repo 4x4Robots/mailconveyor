@@ -15,17 +15,31 @@ def login_view(request):
     if request.method == 'POST':
         form = CustomAuthenticationForm(request, data=request.POST)
         if form.is_valid():
-            email = form.cleaned_data.get('username')
+            username_or_email = form.cleaned_data.get('username')
             password = form.cleaned_data.get('password')
-            user = authenticate(request, username=email, password=password)
+            
+            # Try to authenticate with username_or_email as both username and email
+            user = None
+            # First try as username
+            user = authenticate(request, username=username_or_email, password=password)
+            
+            # If that fails, try to find user by email and authenticate with username
+            if user is None:
+                try:
+                    from .models import CustomUser
+                    user_obj = CustomUser.objects.get(email=username_or_email)
+                    user = authenticate(request, username=user_obj.username, password=password)
+                except CustomUser.DoesNotExist:
+                    pass
+            
             if user is not None:
                 login(request, user)
                 messages.success(request, f"Welcome back, {user.email}!")
-                return redirect('user_list')
+                return redirect('accounts:user_list')
             else:
-                messages.error(request, "Invalid email or password.")
+                messages.error(request, "Invalid username/email or password.")
         else:
-            messages.error(request, "Invalid email or password.")
+            messages.error(request, "Invalid username/email or password.")
     else:
         form = CustomAuthenticationForm()
     
@@ -36,7 +50,7 @@ def logout_view(request):
     """User logout view."""
     logout(request)
     messages.success(request, "You have been logged out.")
-    return redirect('login')
+    return redirect('accounts:login')
 
 
 class UserListView(LoginRequiredMixin, ListView):
@@ -85,7 +99,7 @@ class UserCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     
     def handle_no_permission(self):
         messages.error(self.request, "You do not have permission to create users.")
-        return redirect('user_list')
+        return redirect('accounts:user_list')
     
     def form_valid(self, form):
         messages.success(self.request, f"User {form.cleaned_data['email']} created successfully!")
@@ -109,7 +123,7 @@ class UserUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     
     def handle_no_permission(self):
         messages.error(self.request, "You do not have permission to edit this user.")
-        return redirect('user_list')
+        return redirect('accounts:user_list')
     
     def form_valid(self, form):
         messages.success(self.request, f"User {form.instance.email} updated successfully!")
@@ -127,13 +141,13 @@ class UserDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     
     def handle_no_permission(self):
         messages.error(self.request, "You do not have permission to delete users.")
-        return redirect('user_list')
+        return redirect('accounts:user_list')
     
     def delete(self, request, *args, **kwargs):
         user = self.get_object()
         if user == request.user:
             messages.error(request, "You cannot delete your own account.")
-            return redirect('user_list')
+            return redirect('accounts:user_list')
         messages.success(request, f"User {user.email} deleted successfully!")
         return super().delete(request, *args, **kwargs)
 
@@ -146,7 +160,7 @@ def profile_view(request):
         if form.is_valid():
             form.save()
             messages.success(request, "Your profile has been updated!")
-            return redirect('profile')
+            return redirect('accounts:profile')
     else:
         form = ProfileUpdateForm(instance=request.user)
     
@@ -165,7 +179,7 @@ def change_password_view(request):
             # Re-authenticate user to prevent logout
             login(request, user)
             messages.success(request, "Your password has been changed!")
-            return redirect('profile')
+            return redirect('accounts:profile')
     else:
         form = PasswordChangeForm(request.user)
     
