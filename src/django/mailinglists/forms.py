@@ -91,6 +91,8 @@ class SmtpConfigForm(forms.ModelForm):
         }
     
     def __init__(self, *args, **kwargs):
+        # Remove request from kwargs if present (not needed for this form)
+        kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
         
         # If editing existing config, don't show the password

@@ -143,6 +143,11 @@ class MailingListUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
     template_name = 'mailinglists/form.html'
     success_url = reverse_lazy('mailinglists:list')
     
+    def form_valid(self, form):
+        """Show success message after form submission."""
+        messages.success(self.request, f"Mailing list '{form.instance.name}' updated successfully!")
+        return super().form_valid(form)
+    
     def test_func(self):
         """Check if user can edit this mailing list."""
         mailing_list = self.get_object()
@@ -320,9 +325,10 @@ class SmtpConfigCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         return kwargs
     
     def form_valid(self, form):
-        """Set the mailing_list field."""
+        """Set the mailing_list field and show success message."""
         mailing_list = get_object_or_404(MailingList, pk=self.kwargs.get('mailinglist_pk'))
         form.instance.mailing_list = mailing_list
+        messages.success(self.request, "SMTP configuration created successfully!")
         return super().form_valid(form)
     
     def get_success_url(self):
@@ -377,6 +383,11 @@ class SmtpConfigUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         kwargs = super().get_form_kwargs()
         kwargs['request'] = self.request
         return kwargs
+    
+    def form_valid(self, form):
+        """Show success message after form submission."""
+        messages.success(self.request, "SMTP configuration updated successfully!")
+        return super().form_valid(form)
     
     def get_success_url(self):
         """Redirect to mailing list detail after update."""
