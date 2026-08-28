@@ -55,11 +55,11 @@ class UserListView(LoginRequiredMixin, ListView):
             queryset = queryset.filter(groups__name=role_filter)
         
         # ADMIN can see all users
-        if self.request.user.is_admin():
+        if is_admin(self.request.user):
             return queryset
         
         # MANAGER can see all users but not edit them
-        elif self.request.user.is_manager():
+        elif is_manager(self.request.user):
             return queryset
         
         # Regular USER can only see themselves

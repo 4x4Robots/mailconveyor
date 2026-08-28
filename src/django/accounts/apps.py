@@ -15,7 +15,7 @@ class AccountsConfig(AppConfig):
         from .utils import is_admin, is_manager, get_user_role
         
         # Add role-related methods to User model
-        User.add_to_class('is_admin', property(lambda self: is_admin(self)))
-        User.add_to_class('is_manager', property(lambda self: is_manager(self)))
+        User.add_to_class('is_app_admin', property(lambda self: is_admin(self)))
+        User.add_to_class('is_app_manager', property(lambda self: is_manager(self)))
         User.add_to_class('get_role', lambda self: get_user_role(self))
         User.add_to_class('role', property(lambda self: get_user_role(self)))

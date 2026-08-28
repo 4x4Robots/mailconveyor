@@ -35,7 +35,7 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'accounts:user_list' %}">Users</a>
                         </li>
-                        {% if user.is_admin %}
+                        {% if user.is_app_admin %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'accounts:user_create' %}">Create User</a>
                             </li>
@@ -72,7 +72,7 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'accounts:profile' %}">My Profile</a>
                         </li>
-                        {% if user.is_admin %}
+                        {% if user.is_app_admin %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'accounts:user_create' %}">Create User</a>
                             </li>

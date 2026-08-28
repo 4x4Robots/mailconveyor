@@ -56,11 +56,11 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if user == request.user or request.user.is_admin %}
+                        {% if user == request.user or request.user.is_app_admin %}
                             <a href="{% url 'accounts:user_edit' user.pk %}" class="btn btn-sm btn-warning">Edit</a>
                         {% endif %}
-                        {% if request.user.is_admin and user != request.user %}
-                            <a href="{% url 'accounts:user_delete' user.pk %}" class="btn btn-sm btn-danger">Delete</a>
+                        {% if request.user.is_app_admin and user != request.user %}
+                            <a href="{% url 'accounts:user_delete' user.pk %}" class="btn btn-sm btn-danger">Delete
                         {% endif %}
                     </td>
                 </tr>
