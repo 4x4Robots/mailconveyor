@@ -62,3 +62,9 @@ mailconveyor/
 3. Implement permission system
 4. Build web interface for email composition
 5. Configure SMTP integration
+
+## 📚 Project Documentation
+
+- **[ARCHITECTURE_DECISIONS.md](./ARCHITECTURE_DECISIONS.md)** - All architectural decisions with unique IDs for reference
+- **[CURRENTLY_WORKING_ON.md](./CURRENTLY_WORKING_ON.md)** - Current development status and next tasks
+- **[FEATURES.md](./FEATURES.md)** - Completed features (will be created when first feature is implemented)

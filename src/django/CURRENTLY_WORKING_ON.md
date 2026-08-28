@@ -218,5 +218,6 @@ The MailConveyor system will be organized into **4 main Django apps**, each with
 
 ## 📚 Related Files
 
-- `README.md` - Project overview and specification
-- `FEATURES.md` - Completed features and implementation details (create when first feature is done)
+- **[README.md](./README.md)** - Project overview, specification, and quick start guide
+- **[ARCHITECTURE_DECISIONS.md](./ARCHITECTURE_DECISIONS.md)** - All architectural decisions with unique IDs (AD-001, AD-002, etc.) for reference in code
+- **[FEATURES.md](./FEATURES.md)** - Completed features and implementation details (create when first feature is done)
