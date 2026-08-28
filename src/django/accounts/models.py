@@ -18,8 +18,8 @@ class CustomUser(AbstractUser):
         MANAGER = 'MANAGER', _('Manager')
         ADMIN = 'ADMIN', _('Admin')
     
-    # Remove username field and use email as the primary identifier
-    username = None
+    # Use email as the primary identifier but keep username for Django compatibility
+    username = models.CharField(_('username'), max_length=150, unique=True, help_text=_('Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.'), default='')
     email = models.EmailField(_('email address'), unique=True)
     
     # Role field for permission management
@@ -32,7 +32,7 @@ class CustomUser(AbstractUser):
     
     # Use email as the USERNAME_FIELD for authentication
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['first_name', 'last_name']
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
     
     def __str__(self):
         return f"{self.email} ({self.get_role_display()})"
@@ -52,6 +52,24 @@ class CustomUser(AbstractUser):
     def is_user(self):
         """Check if user is a regular user."""
         return self.role == self.Role.USER
+    
+    @classmethod
+    def create_superuser(cls, email, first_name, last_name, password=None, **extra_fields):
+        """
+        Create and save a superuser with the given email, first name, last name and password.
+        """
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
+        extra_fields.setdefault('role', cls.Role.ADMIN)
+        
+        if not email:
+            raise ValueError('The Email must be set')
+        email = cls.normalize_email(email)
+        user = cls(email=email, first_name=first_name, last_name=last_name, **extra_fields)
+        user.set_password(password)
+        user.save(using=cls._default_manager.db)
+        return user
     
     class Meta:
         verbose_name = _('user')

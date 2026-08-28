@@ -11,7 +11,7 @@ class CustomUserCreationForm(UserCreationForm):
     
     class Meta:
         model = CustomUser
-        fields = ('email', 'first_name', 'last_name', 'role', 'password1', 'password2')
+        fields = ('username', 'email', 'first_name', 'last_name', 'role', 'password1', 'password2')
         widgets = {
             'password1': forms.PasswordInput(attrs={'class': 'form-control'}),
             'password2': forms.PasswordInput(attrs={'class': 'form-control'}),
@@ -19,6 +19,7 @@ class CustomUserCreationForm(UserCreationForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['username'].widget.attrs.update({'class': 'form-control'})
         self.fields['email'].widget.attrs.update({'class': 'form-control'})
         self.fields['first_name'].widget.attrs.update({'class': 'form-control'})
         self.fields['last_name'].widget.attrs.update({'class': 'form-control'})
@@ -30,13 +31,14 @@ class CustomUserChangeForm(UserChangeForm):
     
     class Meta:
         model = CustomUser
-        fields = ('email', 'first_name', 'last_name', 'role', 'is_active')
+        fields = ('username', 'email', 'first_name', 'last_name', 'role', 'is_active')
         widgets = {
             'password': forms.HiddenInput(),  # Hide password field in change form
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['username'].widget.attrs.update({'class': 'form-control'})
         self.fields['email'].widget.attrs.update({'class': 'form-control'})
         self.fields['first_name'].widget.attrs.update({'class': 'form-control'})
         self.fields['last_name'].widget.attrs.update({'class': 'form-control'})
