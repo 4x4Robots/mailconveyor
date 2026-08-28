@@ -12,6 +12,8 @@ from django.contrib import messages
 from django.http import HttpResponse, HttpResponseRedirect
 from django.db.models import Q
 from django.utils import timezone
+from django.core.validators import EmailValidator
+from django.core.exceptions import ValidationError
 import csv
 from io import TextIOWrapper, StringIO
 
@@ -289,13 +291,37 @@ def import_recipients_view(request):
                 # Read and decode the CSV file
                 if hasattr(csv_file, 'read'):
                     # File was uploaded
-                    file_content = csv_file.read().decode('utf-8')
+                    file_content = csv_file.read()
+                    # Try to decode as UTF-8, if that fails try other encodings
+                    try:
+                        file_content = file_content.decode('utf-8')
+                    except UnicodeDecodeError:
+                        try:
+                            file_content = file_content.decode('utf-8-sig')  # UTF-8 with BOM
+                        except UnicodeDecodeError:
+                            try:
+                                file_content = file_content.decode('latin-1')
+                            except Exception as e:
+                                errors.append(f"Error decoding file: {str(e)}")
+                                messages.error(request, f"Error decoding CSV file: {str(e)}")
+                                return redirect('recipients:list')
                 else:
                     # For testing, might be a string
                     file_content = str(csv_file)
                 
+                # Check if file content is empty
+                if not file_content or not file_content.strip():
+                    errors.append("CSV file is empty")
+                    messages.error(request, "The CSV file is empty or contains no data.")
+                    return redirect('recipients:list')
+                
                 # Parse CSV
-                csv_reader = csv.DictReader(StringIO(file_content))
+                try:
+                    csv_reader = csv.DictReader(StringIO(file_content))
+                except Exception as e:
+                    errors.append(f"Error parsing CSV: {str(e)}")
+                    messages.error(request, f"Error parsing CSV file: {str(e)}")
+                    return redirect('recipients:list')
                 
                 # Get the mailing list if specified
                 mailing_list = None
@@ -313,13 +339,49 @@ def import_recipients_view(request):
                 
                 for row_num, row in enumerate(csv_reader, start=1):
                     try:
-                        first_name = row.get('first_name', '').strip()
-                        last_name = row.get('last_name', '').strip()
-                        email = row.get('email', '').strip()
+                        # Handle different CSV header formats (export vs manual)
+                        # Try to get data from various possible column names
+                        first_name = ''
+                        last_name = ''
+                        email = ''
+                        
+                        # Try different possible column names
+                        for key in row.keys():
+                            key_lower = key.lower().strip()
+                            if 'first' in key_lower and 'name' in key_lower:
+                                first_name = row[key].strip()
+                            elif 'last' in key_lower and 'name' in key_lower:
+                                last_name = row[key].strip()
+                            elif 'email' in key_lower:
+                                email = row[key].strip()
+                        
+                        # If we still don't have data, try the original method
+                        if not first_name:
+                            first_name = row.get('first_name', row.get('First Name', '')).strip()
+                        if not last_name:
+                            last_name = row.get('last_name', row.get('Last Name', '')).strip()
+                        if not email:
+                            email = row.get('email', row.get('Email', '')).strip()
+                        
+                        # Clean up the data: remove extra whitespace, quotes, etc.
+                        first_name = first_name.strip(' "\'')
+                        last_name = last_name.strip(' "\'')
+                        email = email.strip(' "\'')
+                        
+                        # Debug info for troubleshooting
+                        if not first_name or not last_name or not email:
+                            errors.append(f"Row {row_num}: Could not extract required data. Available columns: {list(row.keys())}, Row data: {dict(row)}")
                         
                         # Validate required fields
                         if not first_name or not last_name or not email:
-                            errors.append(f"Row {row_num}: Missing required fields (first_name, last_name, email)")
+                            missing_fields = []
+                            if not first_name:
+                                missing_fields.append("first_name/First Name")
+                            if not last_name:
+                                missing_fields.append("last_name/Last Name")
+                            if not email:
+                                missing_fields.append("email/Email")
+                            errors.append(f"Row {row_num}: Missing required fields: {', '.join(missing_fields)}")
                             skipped_count += 1
                             continue
                         
@@ -333,12 +395,17 @@ def import_recipients_view(request):
                             continue
                         
                         # Check for duplicates (AD-005)
-                        if Recipient.objects.filter(
-                            first_name=first_name,
-                            last_name=last_name,
-                            email=email
-                        ).exists():
-                            errors.append(f"Row {row_num}: Duplicate recipient '{first_name} {last_name} <{email}>'")
+                        try:
+                            if Recipient.objects.filter(
+                                first_name=first_name,
+                                last_name=last_name,
+                                email=email
+                            ).exists():
+                                errors.append(f"Row {row_num}: Duplicate recipient '{first_name} {last_name} <{email}>' already exists")
+                                skipped_count += 1
+                                continue
+                        except Exception as e:
+                            errors.append(f"Row {row_num}: Error checking for duplicates: {str(e)}")
                             skipped_count += 1
                             continue
                         
@@ -380,7 +447,11 @@ def import_recipients_view(request):
                 if skipped_count > 0:
                     messages.warning(request, f"Skipped {skipped_count} recipients due to errors.")
                 if errors:
-                    messages.error(request, f"Encountered {len(errors)} errors during import.")
+                    # Show first few errors to user
+                    error_preview = "\n".join(errors[:5])  # Show first 5 errors
+                    if len(errors) > 5:
+                        error_preview += f"\n... and {len(errors) - 5} more errors"
+                    messages.error(request, f"Encountered {len(errors)} errors during import:\n{error_preview}")
                 
                 return redirect('recipients:list')
                 
