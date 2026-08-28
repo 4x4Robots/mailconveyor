@@ -21,30 +21,32 @@ This file tracks all significant architectural decisions for the MailConveyor pr
 ---
 
 ### AD-002: Authentication & Object-Level Permissions
-**Status**: ✅ Accepted (Updated)
+**Status**: ✅ Accepted (Final)
 **Date**: 2026-08-28
 **Context**: User access control for mailing lists
 
 **Decision**: 
-1. Use **Django's built-in User model** with username authentication
+1. Use **Django's built-in User model** with username as email
 2. Use **Django groups** for role management (Admin, Manager, User)
 3. Use **django-guardian** for object-level permissions
 
 **Rationale**: 
 - AD-001: Use Django native capabilities wherever possible
 - Django's built-in User model is well-tested and maintained
-- Groups provide a simple way to manage user roles
+- Groups provide a simple, built-in way to manage user roles
 - Need fine-grained access control (users should only access specific mailing lists)
 - Django's built-in permissions are model-level only, not object-level
 - Guardian provides object-level permissions out of the box
+- Using username as email simplifies the model while maintaining email validation
 
 **Consequences**:
-- Use standard Django User model with username/email/first_name/last_name
+- Use standard Django User model with username (validated as email)/first_name/last_name
 - Roles are implemented as groups: Admin, Manager, User
 - Add `django-guardian` as a dependency
 - Users will have permissions on specific MailingList instances
 - Permission checks will use Guardian's API: `user.has_perm('view_mailinglist', mailinglist)`
 - Need to set up Guardian's authentication backend alongside Django's ModelBackend
+- Username field is validated to ensure it's a valid email address
 
 **Implementation Notes**:
 ```python
@@ -60,9 +62,17 @@ Group.objects.get_or_create(name='Admin')
 Group.objects.get_or_create(name='Manager') 
 Group.objects.get_or_create(name='User')
 
-# Check user roles
-user.is_admin = user.groups.filter(name='Admin').exists()
-user.is_manager = user.groups.filter(name__in=['Manager', 'Admin']).exists()
+# Check user roles (added via accounts.apps.py)
+from accounts.utils import is_admin, is_manager, get_user_role
+is_admin(user)  # Returns True if user is in Admin group
+is_manager(user)  # Returns True if user is in Manager or Admin group
+get_user_role(user)  # Returns 'Admin', 'Manager', or 'User'
+
+# In templates, User model has these properties added:
+user.is_app_admin  # Property: True if in Admin group
+user.is_app_manager  # Property: True if in Manager or Admin group
+user.get_role()  # Method: Returns role name
+user.role  # Property: Returns role name
 ```
 
 ---
@@ -352,3 +362,4 @@ None currently. All critical decisions have been made for initial implementation
 | 2026-08-28 | Initial | Created document with decisions AD-001 through AD-009 |
 | 2026-08-28 | Updated | AD-005: Changed uniqueness constraint to (first_name, last_name, email) and added email deduplication requirement |
 | 2026-08-28 | Updated | AD-002: Simplified to use Django built-in User model with groups for roles |
+
