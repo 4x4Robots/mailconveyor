@@ -82,7 +82,7 @@ class EmailComposerForm(forms.ModelForm):
             instance = kwargs['instance']
             self.fields['recipients'].initial = instance.recipients.all()
             self.fields['mailing_lists'].initial = instance.mailing_lists.all()
-            if hasattr(instance, 'template') and instance.template:
+            if instance.template:
                 self.fields['template'].initial = instance.template
         
         if user:

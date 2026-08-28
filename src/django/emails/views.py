@@ -90,8 +90,26 @@ def get_accessible_emails(user):
     accessible_recipients = Recipient.objects.filter(mailing_lists__in=accessible_lists).distinct()
     recipient_emails = Email.objects.filter(recipients__in=accessible_recipients).distinct()
     
-    # Combine all queries
-    return user_emails.union(list_emails, recipient_emails).distinct()
+    # Combine all queries without using union().distinct()
+    email_ids = set()
+    all_emails = []
+    
+    for email in user_emails:
+        if email.id not in email_ids:
+            all_emails.append(email)
+            email_ids.add(email.id)
+    
+    for email in list_emails:
+        if email.id not in email_ids:
+            all_emails.append(email)
+            email_ids.add(email.id)
+            
+    for email in recipient_emails:
+        if email.id not in email_ids:
+            all_emails.append(email)
+            email_ids.add(email.id)
+    
+    return Email.objects.filter(id__in=email_ids)
 
 
 # Email Template Views
@@ -119,7 +137,26 @@ class EmailTemplateListView(LoginRequiredMixin, ListView):
         # Get global templates (no mailing list)
         global_templates = EmailTemplate.objects.filter(mailing_list__isnull=True)
         
-        return user_templates.union(list_templates, global_templates).distinct()
+        # Combine without union().distinct()
+        template_ids = set()
+        all_templates = []
+        
+        for template in user_templates:
+            if template.id not in template_ids:
+                all_templates.append(template)
+                template_ids.add(template.id)
+        
+        for template in list_templates:
+            if template.id not in template_ids:
+                all_templates.append(template)
+                template_ids.add(template.id)
+                
+        for template in global_templates:
+            if template.id not in template_ids:
+                all_templates.append(template)
+                template_ids.add(template.id)
+        
+        return EmailTemplate.objects.filter(id__in=template_ids)
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -151,7 +188,26 @@ class EmailTemplateDetailView(LoginRequiredMixin, DetailView):
         # Get global templates
         global_templates = EmailTemplate.objects.filter(mailing_list__isnull=True)
         
-        return user_templates.union(list_templates, global_templates).distinct()
+        # Combine without union().distinct()
+        template_ids = set()
+        all_templates = []
+        
+        for template in user_templates:
+            if template.id not in template_ids:
+                all_templates.append(template)
+                template_ids.add(template.id)
+        
+        for template in list_templates:
+            if template.id not in template_ids:
+                all_templates.append(template)
+                template_ids.add(template.id)
+                
+        for template in global_templates:
+            if template.id not in template_ids:
+                all_templates.append(template)
+                template_ids.add(template.id)
+        
+        return EmailTemplate.objects.filter(id__in=template_ids)
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -211,7 +267,21 @@ class EmailTemplateUpdateView(ManagerRequiredMixin, UpdateView):
         accessible_lists = MailingList.objects.filter(users_with_access=user)
         list_templates = EmailTemplate.objects.filter(mailing_list__in=accessible_lists)
         
-        return user_templates.union(list_templates).distinct()
+        # Combine without union().distinct()
+        template_ids = set()
+        all_templates = []
+        
+        for template in user_templates:
+            if template.id not in template_ids:
+                all_templates.append(template)
+                template_ids.add(template.id)
+        
+        for template in list_templates:
+            if template.id not in template_ids:
+                all_templates.append(template)
+                template_ids.add(template.id)
+        
+        return EmailTemplate.objects.filter(id__in=template_ids)
     
     def form_valid(self, form):
         form.instance.updated_at = timezone.now()
@@ -248,7 +318,21 @@ class EmailTemplateDeleteView(ManagerRequiredMixin, DeleteView):
         accessible_lists = MailingList.objects.filter(users_with_access=user)
         list_templates = EmailTemplate.objects.filter(mailing_list__in=accessible_lists)
         
-        return user_templates.union(list_templates).distinct()
+        # Combine without union().distinct()
+        template_ids = set()
+        all_templates = []
+        
+        for template in user_templates:
+            if template.id not in template_ids:
+                all_templates.append(template)
+                template_ids.add(template.id)
+        
+        for template in list_templates:
+            if template.id not in template_ids:
+                all_templates.append(template)
+                template_ids.add(template.id)
+        
+        return EmailTemplate.objects.filter(id__in=template_ids)
 
 
 # Email Views

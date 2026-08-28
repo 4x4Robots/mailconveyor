@@ -4,10 +4,10 @@ A Django-based web application for managing email lists and sending emails to ar
 
 ## Quick Start
 
-To start the Django development server, run:
+To start an asynchronous development server, run:
 
 ```bash
-uv run manage.py runserver
+uv run uvicorn mailconveyor.asgi:application --reload
 ```
 
 The application will be available at `http://localhost:8000`

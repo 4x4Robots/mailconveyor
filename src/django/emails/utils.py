@@ -10,6 +10,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
 from django.utils import timezone
+from asgiref.sync import sync_to_async
 from .models import Email, EmailQueue, EmailLog
 from mailinglists.models import SmtpConfig, EncryptionUtils
 from recipients.models import Recipient
@@ -26,6 +27,9 @@ class AsyncSmtpEmailSender:
     Handles async connection, authentication, and sending of emails
     using the configured SMTP settings from SmtpConfig.
     Implements retry logic and comprehensive logging.
+    
+    Note: Django ORM operations are run in sync context using run_in_executor
+    to avoid "SynchronousOnlyOperation" errors.
     """
     
     def __init__(self, smtp_config):
@@ -57,11 +61,7 @@ class AsyncSmtpEmailSender:
             host = self.smtp_config.host
             port = self.smtp_config.port
             
-            # For async SMTP, we'll use aiosmtplib if available
-            # For now, we'll use a thread pool executor to run sync smtplib
-            # This is a pragmatic approach that works with existing code
-            
-            # Create connection in a thread
+            # Create connection in a thread (SMTP operations are sync)
             loop = asyncio.get_event_loop()
             
             def create_connection():
@@ -88,14 +88,15 @@ class AsyncSmtpEmailSender:
             self.connection = await loop.run_in_executor(None, create_connection)
             
             if self.connection:
-                EmailLog.log_operation(
+                # Log in sync context
+                await self._log_operation_async(
                     operation='CONNECT',
                     log_level='INFO',
                     message=f"Successfully connected to SMTP server: {host}:{port}"
                 )
                 return True
             else:
-                EmailLog.log_operation(
+                await self._log_operation_async(
                     operation='CONNECT',
                     log_level='ERROR',
                     message=f"Failed to connect to SMTP server: {host}:{port}. Error: {self.error_message}"
@@ -104,12 +105,23 @@ class AsyncSmtpEmailSender:
                 
         except Exception as e:
             self.error_message = str(e)
-            EmailLog.log_operation(
+            await self._log_operation_async(
                 operation='CONNECT',
                 log_level='ERROR',
                 message=f"Exception connecting to SMTP server: {self.error_message}"
             )
             return False
+    
+    async def _log_operation_async(self, email=None, operation=None, log_level='INFO', message='', details=None):
+        """Log an operation asynchronously."""
+        from asgiref.sync import sync_to_async
+        await sync_to_async(EmailLog.log_operation)(
+            email=email,
+            operation=operation,
+            log_level=log_level,
+            message=message,
+            details=details
+        )
     
     async def send_email_async(self, from_email, to_email, subject, body, is_html=False, attachments=None):
         """
@@ -131,9 +143,9 @@ class AsyncSmtpEmailSender:
                 return False, f"Failed to connect to SMTP server: {self.error_message}"
         
         try:
-            # Create message in a thread
             loop = asyncio.get_event_loop()
             
+            # Create message in a thread
             def create_message():
                 if is_html:
                     msg = MIMEMultipart('alternative')
@@ -173,13 +185,13 @@ class AsyncSmtpEmailSender:
             success, message = await loop.run_in_executor(None, send_message)
             
             if success:
-                EmailLog.log_operation(
+                await self._log_operation_async(
                     operation='SEND',
                     log_level='INFO',
                     message=f"Email sent: {subject} from {from_email} to {to_email}"
                 )
             else:
-                EmailLog.log_operation(
+                await self._log_operation_async(
                     operation='SEND',
                     log_level='ERROR',
                     message=f"Email send failed: {subject} from {from_email} to {to_email}. Error: {message}"
@@ -189,7 +201,7 @@ class AsyncSmtpEmailSender:
             
         except Exception as e:
             error_msg = str(e)
-            EmailLog.log_operation(
+            await self._log_operation_async(
                 operation='SEND',
                 log_level='ERROR',
                 message=f"Exception sending email: {error_msg}"
@@ -206,13 +218,13 @@ class AsyncSmtpEmailSender:
             try:
                 loop = asyncio.get_event_loop()
                 await loop.run_in_executor(None, self.connection.quit)
-                EmailLog.log_operation(
+                await self._log_operation_async(
                     operation='CONNECT',
                     log_level='INFO',
                     message="SMTP connection closed"
                 )
             except Exception as e:
-                EmailLog.log_operation(
+                await self._log_operation_async(
                     operation='CONNECT',
                     log_level='WARNING',
                     message=f"Error closing SMTP connection: {str(e)}"
@@ -243,13 +255,13 @@ class AsyncSmtpEmailSender:
             success, message = await loop.run_in_executor(None, test_connection)
             
             if success:
-                EmailLog.log_operation(
+                await self._log_operation_async(
                     operation='CONNECT',
                     log_level='INFO',
                     message="SMTP connection test successful"
                 )
             else:
-                EmailLog.log_operation(
+                await self._log_operation_async(
                     operation='CONNECT',
                     log_level='ERROR',
                     message=f"SMTP connection test failed: {message}"
@@ -259,7 +271,7 @@ class AsyncSmtpEmailSender:
             
         except Exception as e:
             error_msg = str(e)
-            EmailLog.log_operation(
+            await self._log_operation_async(
                 operation='CONNECT',
                 log_level='ERROR',
                 message=f"Exception testing SMTP connection: {error_msg}"
@@ -305,21 +317,25 @@ class EmailSenderService:
                 error_msg = f"Failed to connect to SMTP server: {sender.error_message}"
                 results['errors'].append(error_msg)
                 
-                # Mark all queue entries as failed
+                # Mark all queue entries as failed (in sync context)
+                loop = asyncio.get_event_loop()
                 for recipient in recipients:
                     if isinstance(recipient, Recipient):
                         to_email = recipient.email
                     else:
                         to_email = recipient
                     
-                    queue_entry = EmailQueue.objects.create(
-                        email=email,
-                        recipient=recipient if isinstance(recipient, Recipient) else None,
-                        to_email=to_email,
-                        status='FAILED',
-                        error_message=error_msg
+                    # Create queue entry in sync context
+                    queue_entry = await loop.run_in_executor(
+                        None,
+                        lambda: EmailQueue.objects.create(
+                            email=email,
+                            recipient=recipient if isinstance(recipient, Recipient) else None,
+                            to_email=to_email,
+                            status='FAILED',
+                            error_message=error_msg
+                        )
                     )
-                    queue_entry.mark_as_failed(error_msg)
                     results['failed'] += 1
                 
                 return results
@@ -334,12 +350,16 @@ class EmailSenderService:
                         to_email = recipient
                         recipient_obj = None
                     
-                    # Create queue entry
-                    queue_entry = EmailQueue.objects.create(
-                        email=email,
-                        recipient=recipient_obj,
-                        to_email=to_email,
-                        status='PENDING'
+                    # Create queue entry in sync context
+                    loop = asyncio.get_event_loop()
+                    queue_entry = await loop.run_in_executor(
+                        None,
+                        lambda: EmailQueue.objects.create(
+                            email=email,
+                            recipient=recipient_obj,
+                            to_email=to_email,
+                            status='PENDING'
+                        )
                     )
                     
                     # Send email
@@ -352,35 +372,21 @@ class EmailSenderService:
                     )
                     
                     if success:
-                        queue_entry.mark_as_sent()
+                        # Update queue entry in sync context
+                        await loop.run_in_executor(None, queue_entry.mark_as_sent)
                         results['success'] += 1
-                        
-                        EmailLog.log_operation(
-                            email=email,
-                            queue_entry=queue_entry,
-                            operation='SEND',
-                            log_level='INFO',
-                            message=f"Successfully sent email to {to_email}"
-                        )
                     else:
-                        queue_entry.mark_as_failed(message)
+                        # Update queue entry in sync context
+                        await loop.run_in_executor(None, queue_entry.mark_as_failed, message)
                         results['failed'] += 1
                         results['errors'].append(f"{to_email}: {message}")
-                        
-                        EmailLog.log_operation(
-                            email=email,
-                            queue_entry=queue_entry,
-                            operation='SEND',
-                            log_level='ERROR',
-                            message=f"Failed to send email to {to_email}: {message}"
-                        )
                         
                 except Exception as e:
                     error_msg = str(e)
                     results['failed'] += 1
                     results['errors'].append(f"{to_email}: {error_msg}")
                     
-                    EmailLog.log_operation(
+                    await sender._log_operation_async(
                         email=email,
                         operation='SEND',
                         log_level='ERROR',
@@ -404,28 +410,32 @@ class EmailSenderService:
         """
         results = {'success': 0, 'failed': 0, 'retrying': 0, 'errors': []}
         
-        # Get all pending queue entries for this email
-        pending_entries = EmailQueue.objects.filter(
-            email=email,
-            status='PENDING'
-        ).order_by('-priority', 'created_at')
+        # Get all pending queue entries for this email (in sync context)
+        loop = asyncio.get_event_loop()
+        pending_entries = await loop.run_in_executor(
+            None,
+            lambda: list(EmailQueue.objects.filter(
+                email=email,
+                status='PENDING'
+            ).order_by('-priority', 'created_at'))
+        )
         
-        if not pending_entries.exists():
+        if not pending_entries:
             return results
         
-        # Get SMTP config from the email
-        smtp_config = email.smtp_config
+        # Get SMTP config from the email (in sync context)
+        smtp_config = await loop.run_in_executor(None, lambda: email.smtp_config)
         if not smtp_config:
-            # Try to get SMTP config from mailing lists
-            for mailing_list in email.mailing_lists.all():
-                if mailing_list.smtp_config:
-                    smtp_config = mailing_list.smtp_config
+            # Try to get SMTP config from mailing lists (in sync context)
+            for mailing_list in await loop.run_in_executor(None, lambda: list(email.mailing_lists.all())):
+                smtp_config = await loop.run_in_executor(None, lambda ml=mailing_list: ml.smtp_config)
+                if smtp_config:
                     break
         
         if not smtp_config:
             error_msg = "No SMTP configuration available for this email"
             for entry in pending_entries:
-                entry.mark_as_failed(error_msg)
+                await loop.run_in_executor(None, entry.mark_as_failed, error_msg)
                 results['failed'] += 1
                 results['errors'].append(f"{entry.to_email}: {error_msg}")
             return results
@@ -438,16 +448,16 @@ class EmailSenderService:
             if not await sender.connect_async():
                 error_msg = f"Failed to connect to SMTP server: {sender.error_message}"
                 for entry in pending_entries:
-                    entry.mark_as_failed(error_msg)
+                    await loop.run_in_executor(None, entry.mark_as_failed, error_msg)
                     results['failed'] += 1
                     results['errors'].append(f"{entry.to_email}: {error_msg}")
                 return results
             
             for entry in pending_entries:
                 try:
-                    # Mark as sending
-                    entry.status = 'SENDING'
-                    entry.save()
+                    # Mark as sending (in sync context)
+                    await loop.run_in_executor(None, setattr, entry, 'status', 'SENDING')
+                    await loop.run_in_executor(None, entry.save)
                     
                     # Send email
                     success, message = await sender.send_email_async(
@@ -459,63 +469,33 @@ class EmailSenderService:
                     )
                     
                     if success:
-                        entry.mark_as_sent()
+                        await loop.run_in_executor(None, entry.mark_as_sent)
                         results['success'] += 1
-                        
-                        EmailLog.log_operation(
-                            email=email,
-                            queue_entry=entry,
-                            operation='SEND',
-                            log_level='INFO',
-                            message=f"Queue entry {entry.id} sent to {entry.to_email}"
-                        )
                     else:
                         # Check if we can retry
-                        if entry.can_be_retried():
-                            entry.status = 'RETRYING'
-                            entry.error_message = message
-                            entry.save()
+                        can_retry = await loop.run_in_executor(None, entry.can_be_retried)
+                        if can_retry:
+                            await loop.run_in_executor(None, setattr, entry, 'status', 'RETRYING')
+                            await loop.run_in_executor(None, setattr, entry, 'error_message', message)
+                            await loop.run_in_executor(None, entry.save)
                             results['retrying'] += 1
-                            
-                            EmailLog.log_operation(
-                                email=email,
-                                queue_entry=entry,
-                                operation='RETRY',
-                                log_level='WARNING',
-                                message=f"Queue entry {entry.id} will be retried: {message}"
-                            )
                         else:
-                            entry.mark_as_failed(message)
+                            await loop.run_in_executor(None, entry.mark_as_failed, message)
                             results['failed'] += 1
                             results['errors'].append(f"{entry.to_email}: {message}")
-                            
-                            EmailLog.log_operation(
-                                email=email,
-                                queue_entry=entry,
-                                operation='SEND',
-                                log_level='ERROR',
-                                message=f"Queue entry {entry.id} failed: {message}"
-                            )
                         
                 except Exception as e:
                     error_msg = str(e)
-                    if entry.can_be_retried():
-                        entry.status = 'RETRYING'
-                        entry.error_message = error_msg
-                        entry.save()
+                    can_retry = await loop.run_in_executor(None, entry.can_be_retried)
+                    if can_retry:
+                        await loop.run_in_executor(None, setattr, entry, 'status', 'RETRYING')
+                        await loop.run_in_executor(None, setattr, entry, 'error_message', error_msg)
+                        await loop.run_in_executor(None, entry.save)
                         results['retrying'] += 1
                     else:
-                        entry.mark_as_failed(error_msg)
+                        await loop.run_in_executor(None, entry.mark_as_failed, error_msg)
                         results['failed'] += 1
                         results['errors'].append(f"{entry.to_email}: {error_msg}")
-                    
-                    EmailLog.log_operation(
-                        email=email,
-                        queue_entry=entry,
-                        operation='SEND',
-                        log_level='ERROR',
-                        message=f"Exception processing queue entry {entry.id}: {error_msg}"
-                    )
             
             return results
             
@@ -531,31 +511,35 @@ class EmailSenderService:
         """
         results = {'retried': 0, 'failed': 0, 'errors': []}
         
-        # Get all failed queue entries that can be retried
-        retryable_entries = EmailQueue.objects.filter(
-            status='FAILED',
-            attempts__lt=2
+        # Get all failed queue entries that can be retried (in sync context)
+        loop = asyncio.get_event_loop()
+        retryable_entries = await loop.run_in_executor(
+            None,
+            lambda: list(EmailQueue.objects.filter(
+                status='FAILED',
+                attempts__lt=2
+            ))
         )
         
         for entry in retryable_entries:
             try:
-                # Reset status for retry
-                entry.status = 'PENDING'
-                entry.save()
+                # Reset status for retry (in sync context)
+                await loop.run_in_executor(None, setattr, entry, 'status', 'PENDING')
+                await loop.run_in_executor(None, entry.save)
                 
                 # Process this specific entry
                 email = entry.email
-                smtp_config = email.smtp_config
+                smtp_config = await loop.run_in_executor(None, lambda: email.smtp_config)
                 
                 if not smtp_config:
-                    for mailing_list in email.mailing_lists.all():
-                        if mailing_list.smtp_config:
-                            smtp_config = mailing_list.smtp_config
+                    for mailing_list in await loop.run_in_executor(None, lambda: list(email.mailing_lists.all())):
+                        smtp_config = await loop.run_in_executor(None, lambda ml=mailing_list: ml.smtp_config)
+                        if smtp_config:
                             break
                 
                 if not smtp_config:
                     error_msg = "No SMTP configuration available"
-                    entry.mark_as_failed(error_msg)
+                    await loop.run_in_executor(None, entry.mark_as_failed, error_msg)
                     results['failed'] += 1
                     results['errors'].append(f"Entry {entry.id}: {error_msg}")
                     continue
@@ -573,31 +557,15 @@ class EmailSenderService:
                         )
                         
                         if success:
-                            entry.mark_as_sent()
+                            await loop.run_in_executor(None, entry.mark_as_sent)
                             results['retried'] += 1
-                            
-                            EmailLog.log_operation(
-                                email=email,
-                                queue_entry=entry,
-                                operation='RETRY',
-                                log_level='INFO',
-                                message=f"Queue entry {entry.id} retried successfully"
-                            )
                         else:
-                            entry.mark_as_failed(message)
+                            await loop.run_in_executor(None, entry.mark_as_failed, message)
                             results['failed'] += 1
                             results['errors'].append(f"Entry {entry.id}: {message}")
-                            
-                            EmailLog.log_operation(
-                                email=email,
-                                queue_entry=entry,
-                                operation='RETRY',
-                                log_level='ERROR',
-                                message=f"Queue entry {entry.id} retry failed: {message}"
-                            )
                     else:
                         error_msg = f"Failed to connect: {sender.error_message}"
-                        entry.mark_as_failed(error_msg)
+                        await loop.run_in_executor(None, entry.mark_as_failed, error_msg)
                         results['failed'] += 1
                         results['errors'].append(f"Entry {entry.id}: {error_msg}")
                 
@@ -606,27 +574,18 @@ class EmailSenderService:
                     
             except Exception as e:
                 error_msg = str(e)
-                entry.mark_as_failed(error_msg)
+                await loop.run_in_executor(None, entry.mark_as_failed, error_msg)
                 results['failed'] += 1
                 results['errors'].append(f"Entry {entry.id}: {error_msg}")
-                
-                EmailLog.log_operation(
-                    email=entry.email,
-                    queue_entry=entry,
-                    operation='RETRY',
-                    log_level='ERROR',
-                    message=f"Exception retrying queue entry {entry.id}: {error_msg}"
-                )
         
         return results
 
 
 # Synchronous wrapper functions for compatibility
-# These allow the async sender to be used from synchronous contexts
-
 def send_email_sync(email, recipients, smtp_config):
     """
     Send an email synchronously (wrapper for async version).
+    Uses async_to_sync to run async code from sync contexts.
     
     Args:
         email: Email instance
@@ -636,63 +595,42 @@ def send_email_sync(email, recipients, smtp_config):
     Returns:
         dict: Results from async sending
     """
-    import asyncio
+    from asgiref.sync import async_to_sync
     
     service = EmailSenderService()
     
-    # Run async function in a new event loop
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    # Wrap the async function with async_to_sync
+    sync_function = async_to_sync(service.send_email_to_recipients)
     
-    try:
-        return loop.run_until_complete(
-            service.send_email_to_recipients(email, recipients, smtp_config)
-        )
-    finally:
-        loop.close()
+    return sync_function(email, recipients, smtp_config)
 
 
 def process_queue_sync(email):
     """
     Process email queue synchronously (wrapper for async version).
-    
-    Args:
-        email: Email instance
-        
-    Returns:
-        dict: Results from queue processing
     """
-    import asyncio
+    from asgiref.sync import async_to_sync
     
     service = EmailSenderService()
     
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    # Wrap the async function with async_to_sync
+    sync_function = async_to_sync(service.process_email_queue)
     
-    try:
-        return loop.run_until_complete(service.process_email_queue(email))
-    finally:
-        loop.close()
+    return sync_function(email)
 
 
 def retry_failed_sync():
     """
     Retry failed emails synchronously (wrapper for async version).
-    
-    Returns:
-        dict: Results from retry operation
     """
-    import asyncio
+    from asgiref.sync import async_to_sync
     
     service = EmailSenderService()
     
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    # Wrap the async function with async_to_sync
+    sync_function = async_to_sync(service.retry_failed_emails)
     
-    try:
-        return loop.run_until_complete(service.retry_failed_emails())
-    finally:
-        loop.close()
+    return sync_function()
 
 
 # Rate limiting utility (AD-009)
@@ -947,10 +885,10 @@ def cleanup_old_emails(days=14):
     deleted_count = old_emails.count()
     
     # Also delete related queue entries and logs
-    old_queue = EmailQueue.objects.filter(created_at__lt=cutfall)
+    old_queue = EmailQueue.objects.filter(created_at__lt=cutoff)
     queue_deleted = old_queue.delete()
     
-    old_logs = EmailLog.objects.filter(created_at__lt=cutoff)
+    old_logs = EmailLog.objects.filter(created_at__lt=cutfall)
     logs_deleted = old_logs.delete()
     
     # Delete the emails
