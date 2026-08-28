@@ -1,0 +1,205 @@
+{% extends "emails/base.html" %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active" aria-current="page">Dashboard</li>
+{% endblock %}
+
+{% block emails_content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1>Email Dashboard</h1>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-header">Total Emails</div>
+            <div class="card-body">
+                <h5 class="card-title">{{ stats.total_emails }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-header">Sent</div>
+            <div class="card-body">
+                <h5 class="card-title">{{ stats.sent }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning mb-3">
+            <div class="card-header">Drafts</div>
+            <div class="card-body">
+                <h5 class="card-title">{{ stats.draft }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-danger mb-3">
+            <div class="card-header">Failed</div>
+            <div class="card-body">
+                <h5 class="card-title">{{ stats.failed }}</h5>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-header">Queued</div>
+            <div class="card-body">
+                <h5 class="card-title">{{ stats.queued }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-secondary mb-3">
+            <div class="card-header">Sending</div>
+            <div class="card-body">
+                <h5 class="card-title">{{ stats.sending }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-light mb-3 text-dark">
+            <div class="card-header">Retrying</div>
+            <div class="card-body">
+                <h5 class="card-title">{{ stats.retrying }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-dark mb-3">
+            <div class="card-header">Queue Entries</div>
+            <div class="card-body">
+                <h5 class="card-title">{{ stats.total_queue }}</h5>
+                <p class="card-text">Pending: {{ stats.pending_queue }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if is_manager or is_admin %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Queue Management</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <form method="post" action="{% url 'emails:process_queue' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-play"></i> Process Queue
+                            </button>
+                        </form>
+                    </div>
+                    <div class="col-md-6">
+                        <form method="post" action="{% url 'emails:retry_failed' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-arrow-clockwise"></i> Retry Failed
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>System Logs</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Error Logs:</strong> {{ stats.error_logs }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Warning Logs:</strong> {{ stats.warning_logs }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Recent Emails</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_emails %}
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Subject</th>
+                            <th>Status</th>
+                            <th>Recipients</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for email in recent_emails %}
+                        <tr>
+                            <td>
+                                <a href="{% url</td> 'emails:detail' email.pk %}">
+                                    {{ email.subject|truncatechars:50 }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if email.status == 'SENT' %}bg-success
+                                    {% elif email.status == 'FAILED' %}bg-danger
+                                    {% elif email.status == 'QUEUED' %}bg-info
+                                    {% elif email.status == 'SENDING' %}bg-primary
+                                    {% elif email.status == 'RETRYING' %}bg-warning
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ email.status }}
+                                </span>
+                            </td>
+                            <td>{{ email.get_recipient_count }}</td>
+                            <td>{{ email.created_at|date:"Y-m-d H:i" }}</td>
+                            <td>
+                                <a href="{% url 'emails:detail' email.pk %}" class="btn btn-sm btn-info">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p>No recent emails found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <a href="{% url 'emails:create' %}" class="btn btn-primary">
+            <i class="bi bi-envelope"></i> Compose New Email
+        </a>
+        {% if is_manager or is_admin %}
+        <a href="{% url 'emails:queue_list' %}" class="btn btn-info">
+            <i class="bi bi-list"></i> View Queue
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

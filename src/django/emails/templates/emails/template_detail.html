@@ -1,0 +1,93 @@
+{% extends "emails/base.html" %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'emails:template_list' %}">Templates</a></li>
+<li class="breadcrumb-item active" aria-current="page">{{ template.name }}</li>
+{% endblock %}
+
+{% block emails_content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1>{{ template.name }}</h1>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Template Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <dl class="row">
+                            <dt class="col-sm-4">Name:</dt>
+                            <dd class="col-sm-8">{{ template.name }}</dd>
+                            
+                            <dt class="col-sm-4">Subject:</dt>
+                            <dd class="col-sm-8">{{ template.subject }}</dd>
+                            
+                            <dt class="col-sm-4">HTML:</dt>
+                            <dd class="col-sm-8">{{ template.is_html|yesno:"Yes,No" }}</dd>
+                            
+                            <dt class="col-sm-4">Created:</dt>
+                            <dd class="col-sm-8">{{ template.created_at|date:"Y-m-d H:i" }}</dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <dl class="row">
+                            <dt class="col-sm-4">Mailing List:</dt>
+                            <dd class="col-sm-8">{{ template.mailing_list|default:"Global" }}</dd>
+                            
+                            <dt class="col-sm-4">Created By:</dt>
+                            <dd class="col-sm-8">{{ template.created_by|default:"Unknown" }}</dd>
+                            
+                            <dt class="col-sm-4">Updated:</dt>
+                            <dd class="col-sm-8">{{ template.updated_at|date:"Y-m-d H:i" }}</dd>
+                            
+                            <dt class="col-sm-4">Template ID:</dt>
+                            <dd class="col-sm-8">{{ template.pk }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Template Body</h5>
+            </div>
+            <div class="card-body">
+                {% if template.is_html %}
+                <div style="border: 1px solid #ddd; padding: 15px; min-height: 200px;">
+                    {{ template.body|safe }}
+                </div>
+                {% else %}
+                <pre style="white-space: pre-wrap; border: 1px solid #ddd; padding: 15px; min-height: 200px;">{{ template.body }}</pre>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="btn-group" role="group">
+            <a href="{% url 'emails:template_list' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to List
+            </a>
+            <a href="{% url 'emails:template_edit' template.pk %}" class="btn btn-primary">
+                <i class="bi bi-pencil"></i> Edit
+            </a>
+            <a href="{% url 'emails:template_delete' template.pk %}" class="btn btn-danger">
+                <i class="bi bi-trash"></i> Delete
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

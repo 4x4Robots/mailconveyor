@@ -1,0 +1,291 @@
+{% extends "emails/base.html" %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'emails:list' %}">Emails</a></li>
+<li class="breadcrumb-item active" aria-current="page">{{ email.subject|truncatechars:30 }}</li>
+{% endblock %}
+
+{% block emails_content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1>{{ email.subject }}</h1>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Email Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <dl class="row">
+                            <dt class="col-sm-4">Status:</dt>
+                            <dd class="col-sm-8">
+                                <span class="badge 
+                                    {% if email.status == 'SENT' %}bg-success
+                                    {% elif email.status == 'FAILED' %}bg-danger
+                                    {% elif email.status == 'QUEUED' %}bg-info
+                                    {% elif email.status == 'SENDING' %}bg-primary
+                                    {% elif email.status == 'RETRYING' %}bg-warning
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ email.status }}
+                                </span>
+                            </dd>
+                            
+                            <dt class="col-sm-4">From:</dt>
+                            <dd class="col-sm-8">{{ email.from_email }}</dd>
+                            
+                            <dt class="col-sm-4">Created:</dt>
+                            <dd class="col-sm-8">{{ email.created_at|date:"Y-m-d H:i:s" }}</dd>
+                            
+                            <dt class="col-sm-4">Sent:</dt>
+                            <dd class="col-sm-8">
+                                {% if email.sent_at %}
+                                {{ email.sent_at|date:"Y-m-d H:i:s" }}
+                                {% else %}
+                                Not sent yet
+                                {% endif %}
+                            </dd>
+                            
+                            <dt class="col-sm-4">Created By:</dt>
+                            <dd class="col-sm-8">{{ email.created_by|default:"Unknown" }}</dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <dl class="row">
+                            <dt class="col-sm-4">Recipients:</dt>
+                            <dd class="col-sm-8">{{ email.get_recipient_count }}</dd>
+                            
+                            <dt class="col-sm-4">Mailing Lists:</dt>
+                            <dd class="col-sm-8">{{ email.get_mailing_list_count }}</dd>
+                            
+                            <dt class="col-sm-4">HTML Email:</dt>
+                            <dd class="col-sm-8">{{ email.is_html|yesno:"Yes,No" }}</dd>
+                            
+                            <dt class="col-sm-4">Attempts:</dt>
+                            <dd class="col-sm-8">{{ email.attempts }}</dd>
+                            
+                            <dt class="col-sm-4">SMTP Config:</dt>
+                            <dd class="col-sm-8">{{ email.smtp_config|default:"None" }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if email.error_message %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5>Error Information</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ email.error_message }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if email.bounce_message %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5>Bounce Information</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ email.bounce_message }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Email Body</h5>
+            </div>
+            <div class="card-body">
+                {% if email.is_html %}
+                <div style="border: 1px solid #ddd; padding: 15px; min-height: 200px;">
+                    {{ email.body|safe }}
+                </div>
+                {% else %}
+                <pre style="white-space: pre-wrap; border: 1px solid #ddd; padding: 15px; min-height: 200px;">{{ email.body }}</pre>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if attachments %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Attachments</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Filename</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for attachment in attachments %}
+                        <tr>
+                            <td>{{ attachment.filename }}</td>
+                            <td>{{ attachment.created_at|date:"Y-m-d H:i" }}</td>
+                            <td>
+                                <a href="{{ attachment.file.url }}" class="btn btn-sm btn-info" download>
+                                    <i class="bi bi-download"></i> Download
+                                </a>
+                                <a href="{% url 'emails:attachment_delete' attachment.pk %}" class="btn btn-sm btn-danger">
+                                    <i class="bi bi-trash"></i> Delete
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if queue_entries %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Queue Entries</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Recipient</th>
+                            <th>To Email</th>
+                            <th>Status</th>
+                            <th>Attempts</th>
+                            <th>Sent At</th>
+                            <th>Error</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in queue_entries %}
+                        <tr>
+                            <td>{{ entry.recipient|default:"-" }}</td>
+                            <td>{{ entry.to_email }}</td>
+                            <td>
+                                <span class="badge 
+                                    {% if entry.status == 'SENT' %}bg-success
+                                    {% elif entry.status == 'FAILED' %}bg-danger
+                                    {% elif entry.status == 'PENDING' %}bg-info
+                                    {% elif entry.status == 'SENDING' %}bg-primary
+                                    {% elif entry.status == 'RETRYING' %}bg-warning
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ entry.status }}
+                                </span>
+                            </td>
+                            <td>{{ entry.attempts }}</td>
+                            <td>
+                                {% if entry.sent_at %}
+                                {{ entry.sent_at|date:"Y-m-d H:i" }}
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>{{ entry.error_message|truncatechars:50 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if logs %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Recent Logs</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Level</th>
+                            <th>Operation</th>
+                            <th>Message</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td>{{ log.created_at|date:"Y-m-d H:i:s" }}</td>
+                            <td>
+                                <span class="badge 
+                                    {% if log.log_level == 'ERROR' %}bg-danger
+                                    {% elif log.log_level == 'WARNING' %}bg-warning
+                                    {% elif log.log_level == 'INFO' %}bg-info
+                                    {% elif log.log_level == 'DEBUG' %}bg-secondary
+                                    {% else %}bg-primary{% endif %}">
+                                    {{ log.log_level }}
+                                </span>
+                            </td>
+                            <td>{{ log.operation }}</td>
+                            <td>{{ log.message|truncatechars:80 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="btn-group" role="group">
+            <a href="{% url 'emails:list' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to List
+            </a>
+            {% if can_edit %}
+            <a href="{% url 'emails:edit' email.pk %}" class="btn btn-primary">
+                <i class="bi bi-pencil"></i> Edit
+            </a>
+            {% endif %}
+            {% if can_send %}
+            <a href="{% url 'emails:send' email.pk %}" class="btn btn-success">
+                <i class="bi bi-send"></i> Send
+            </a>
+            {% endif %}
+            <a href="{% url 'emails:attachment_create' email.pk %}" class="btn btn-info">
+                <i class="bi bi-paperclip"></i> Add Attachment
+            </a>
+            <a href="{% url 'emails:delete' email.pk %}" class="btn btn-danger">
+                <i class="bi bi-trash"></i> Delete
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

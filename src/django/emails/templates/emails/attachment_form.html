@@ -1,0 +1,75 @@
+{% extends "emails/base.html" %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'emails:list' %}">Emails</a></li>
+<li class="breadcrumb-item"><a href="{% url 'emails:detail' email.pk %}">{{ email.subject|truncatechars:30 }}</a></li>
+<li class="breadcrumb-item active" aria-current="page">Add Attachment</li>
+{% endblock %}
+
+{% block emails_content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1>Add Attachment to {{ email.subject }}</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h5>Upload Attachment</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.file.id_for_label }}" class="form-label">File *</label>
+                        {{ form.file }}
+                        {% if form.file.errors %}
+                        <div class="text-danger">
+                            {{ form.file.errors }}
+                        </div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Maximum file size: 10MB. Allowed types: PDF, DOC, DOCX, TXT, CSV, XLS, XLSX, JPG, JPEG, PNG, GIF, ZIP.
+                        </small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.filename.id_for_label }}" class="form-label">Filename</label>
+                        {{ form.filename }}
+                        {% if form.filename.errors %}
+                        <div class="text-danger">
+                            {{ form.filename.errors }}
+                        </div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Optional. If left blank, the original filename will be used.
+                        </small>
+                    </div>
+                    
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {{ form.non_field_errors }}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-upload"></i> Upload Attachment
+                            </button>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <a href="{% url 'emails:detail' email.pk %}" class="btn btn-secondary">
+                                <i class="bi bi-x"></i> Cancel
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "emails/base.html" %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'emails:list' %}">Emails</a></li>
+<li class="breadcrumb-item"><a href="{% url 'emails:detail' object.email.pk %}">{{ object.email.subject|truncatechars:30 }}</a></li>
+<li class="breadcrumb-item active" aria-current="page">Delete Attachment</li>
+{% endblock %}
+
+{% block emails_content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1>Delete Attachment</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5>Confirm Deletion</h5>
+            </div>
+            <div class="card-body">
+                <p>Are you sure you want to delete the attachment <strong>{{ object.filename }}</strong>?</p>
+                
+                <p>This action cannot be undone. The file will be permanently deleted from the server.</p>
+                
+                <dl class="row">
+                    <dt class="col-sm-4">Filename:</dt>
+                    <dd class="col-sm-8">{{ object.filename }}</dd>
+                    
+                    <dt class="col-sm-4">Email:</dt>
+                    <dd class="col-sm-8">{{ object.email.subject }}</dd>
+                    
+                    <dt class="col-sm-4">Created:</dt>
+                    <dd class="col-sm-8">{{ object.created_at|date:"Y-m-d H:i" }}</dd>
+                </dl>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Yes, Delete
+                            </button>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <a href="{% url 'emails:detail' object.email.pk %}" class="btn btn-secondary">
+                                <i class="bi bi-x"></i> Cancel
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

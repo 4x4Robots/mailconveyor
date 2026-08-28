@@ -1,0 +1,164 @@
+{% extends "emails/base.html" %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'emails:list' %}">Emails</a></li>
+<li class="breadcrumb-item"><a href="{% url 'emails:detail' email.pk %}">{{ email.subject|truncatechars:30 }}</a></li>
+<li class="breadcrumb-item active" aria-current="page">Send</li>
+{% endblock %}
+
+{% block emails_content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1>Send Email: {{ email.subject }}</h1>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Email Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <dl class="row">
+                            <dt class="col-sm-4">Subject:</dt>
+                            <dd class="col-sm-8">{{ email.subject }}</dd>
+                            
+                            <dt class="col-sm-4">From:</dt>
+                            <dd class="col-sm-8">{{ email.from_email }}</dd>
+                            
+                            <dt class="col-sm-4">Recipients:</dt>
+                            <dd class="col-sm-8">{{ email.get_recipient_count }}</dd>
+                            
+                            <dt class="col-sm-4">Mailing Lists:</dt>
+                            <dd class="col-sm-8">{{ email.get_mailing_list_count }}</dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <dl class="row">
+                            <dt class="col-sm-4">Total Recipients:</dt>
+                            <dd class="col-sm-8">{{ email.get_unique_recipient_emails|length }}</dd>
+                            
+                            <dt class="col-sm-4">SMTP Config:</dt>
+                            <dd class="col-sm-8">{{ email.smtp_config|default:"Inherited from mailing list" }}</dd>
+                            
+                            <dt class="col-sm-4">HTML Email:</dt>
+                            <dd class="col-sm-8">{{ email.is_html|yesno:"Yes,No" }}</dd>
+                            
+                            <dt class="col-sm-4">Status:</dt>
+                            <dd class="col-sm-8">
+                                <span class="badge bg-secondary">{{ email.status }}</span>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Send Options</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {{ form.send_now }}
+                            <label class="form-check-label" for="{{ form.send_now.id_for_label }}">
+                                Send Immediately
+                            </label>
+                            <small class="form-text text-muted">
+                                Send the email right now using the configured SMTP server.
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {{ form.schedule_for_later }}
+                            <label class="form-check-label" for="{{ form.schedule_for_later.id_for_label }}">
+                                Schedule for Later
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.scheduled_time.id_for_label }}" class="form-label">Scheduled Time</label>
+                        {{ form.scheduled_time }}
+                        <small class="form-text text-muted">
+                            Select a date and time to send the email (only used if "Schedule for Later" is checked).
+                        </small>
+                        {% if form.scheduled_time.errors %}
+                        <div class="text-danger">
+                            {{ form.scheduled_time.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {{ form.non_field_errors }}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-send"></i> Send Email
+                            </button>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <a href="{% url 'emails:detail' email.pk %}" class="btn btn-secondary">
+                                <i class="bi bi-x"></i> Cancel
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5>Recipients Preview</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>This email will be sent to the following recipients:</strong></p>
+                
+                {% with unique_recipients=email.get_unique_recipient_emails %}
+                {% if unique_recipients %}
+                <ul class="list-group list-group-flush">
+                    {% for recipient in unique_recipients %}
+                    <li class="list-group-item">
+                        {% if recipient.first_name or recipient.last_name %}
+                        {{ recipient.get_full_name }} &lt;{{ recipient.email }}&gt;
+                        {% else %}
+                        {{ recipient.email }}
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p>No recipients selected.</p>
+                {% endif %}
+                {% endwith %}
+                
+                <p class="mt-3 text-muted">
+                    <small>Note: Duplicate email addresses have been deduplicated. Each email address will receive only one copy of the message.</small>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

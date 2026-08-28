@@ -115,14 +115,14 @@ The MailConveyor system will be organized into **4 main Django apps**, each with
 
 **Services**:
 - SMTP sending service (uses list-specific SMTP config)
-- Async email sending (Celery or Django background tasks)
+- Async email sending (Django background tasks -> use asgi server)
 - Email validation
 
 **Permissions**:
 - ADMIN/MANAGER/USER: Can send emails to recipients/lists they have access to
 - Can only use SMTP configs from lists they have access to
 
-**Status**: ⬜ Not started
+**Status**: ✅ Complete
 
 ---
 
@@ -187,18 +187,18 @@ The MailConveyor system will be organized into **4 main Django apps**, each with
 6. ✅ Set up basic permissions system (DONE)
 
 ### Phase 2: Core Features (Priority: HIGH)
-7. ⬜ Create `emails` app with Email model
-8. ⬜ Implement email sending service
+7. ✅ Create `emails` app with Email model
+8. ✅ Implement email sending service
 9. ✅ Build recipient management interface (DONE)
 10. ✅ Build mailing list management interface (DONE)
 
 ### Phase 3: User Interface (Priority: MEDIUM)
-11. ⬜ Create email composer web interface
+11. ✅ Create email composer web interface
 12. ✅ Build admin dashboard (DONE - templates in each app)
 13. ✅ Implement user profile management (DONE - part of the accounts app)
 
 ### Phase 4: Advanced Features (Priority: LOW)
-14. ⬜ Add email templates
+14. ✅ Add email templates
 15. ✅ Implement CSV import/export for recipients (DONE - part of the recipients app)
 16. ⬜ Add email scheduling
 
@@ -206,9 +206,9 @@ The MailConveyor system will be organized into **4 main Django apps**, each with
 
 ## 📝 Current Status
 
-- **Last Updated**: 2026-08-28
-- **Current Focus**: Recipients app implementation
-- **Next Immediate Task**: Verify recipients app in local dev server, then proceed to emails app
+- **Last Updated**: 2026-08-29
+- **Current Focus**: Emails app implementation
+- **Next Immediate Task**: Verify emails app in local dev server
 
 ---
 

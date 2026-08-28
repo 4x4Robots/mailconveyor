@@ -1,0 +1,46 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}{{ title|default:"Emails" }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'emails:dashboard' %}">Emails</a></li>
+                {% block breadcrumb %}{% endblock %}
+            </ol>
+        </nav>
+    </div>
+    
+    {% block emails_content %}{% endblock %}
+</div>
+{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar">
+    <h5>Emails</h5>
+    <ul class="nav flex-column">
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'emails:dashboard' %}">Dashboard</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'emails:list' %}">All Emails</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'emails:create' %}">Compose Email</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'emails:template_list' %}">Templates</a>
+        </li>
+        {% if user.is_app_manager %}
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'emails:queue_list' %}">Queue</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'emails:log_list' %}">Logs</a>
+        </li>
+        {% endif %}
+    </ul>
+</div>
+{% endblock %}

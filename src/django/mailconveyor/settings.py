@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'accounts',
     'mailinglists',
     'recipients',
+    'emails',
     'guardian',
 ]
 
@@ -63,7 +64,7 @@ ROOT_URLCONF = 'mailconveyor.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
