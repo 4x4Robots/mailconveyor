@@ -123,27 +123,62 @@ class EmailQueue(models.Model):
 ---
 
 ### AD-005: Recipient Management
-**Status**: ✅ Accepted
+**Status**: ✅ Accepted (Updated 2026-08-28)
 **Date**: 2026-08-28
 **Context**: Recipient data constraints and validation
 
 **Decision**:
 1. **Scale**: Keep it simple - maximum 50 recipients per list
-2. **Email uniqueness**: Globally unique email addresses across all recipients
-3. **Validation**: Use pre-built email validation (Django or Pydantic)
-4. **No SMTP verification**: Skip actual SMTP address verification
+2. **Uniqueness constraint**: The combination of `first_name`, `last_name`, and `email` must be globally unique (allows same email with different names)
+3. **Email deduplication**: When sending emails, ensure each email address receives only one copy, even if multiple recipients share the same email
+4. **Validation**: Use pre-built email validation (Django or Pydantic)
+5. **No SMTP verification**: Skip actual SMTP address verification
 
 **Rationale**:
+- Real-world data shows recipients with same email but different names
+- Need to prevent duplicate name+email combinations
+- Must prevent duplicate emails to the same address during sending
 - Small scale means performance concerns are negligible
-- Global uniqueness prevents duplicate entries
 - Pre-built validators are well-tested and maintained
 - SMTP verification adds complexity and external dependencies
 
 **Consequences**:
-- Recipient.email field will have `unique=True` constraint
-- Use Django's `EmailValidator` or Pydantic's `EmailStr`
-- No need for complex indexing or denormalization
+- Recipient model will have `unique_together` constraint on `(first_name, last_name, email)`
+- Use Django's `EmailValidator` or Pydantic's `EmailStr` for email field
+- Email sending logic must deduplicate recipients by email address before sending
+- Need to track which email addresses have already been sent to in a single job
 - Simple many-to-many relationship between Recipient and MailingList
+
+**Implementation Notes**:
+```python
+# models.py
+class Recipient(models.Model):
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    email = models.EmailField()
+    # ... other fields
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['first_name', 'last_name', 'email'],
+                name='unique_recipient_identity'
+            )
+        ]
+
+# Email sending deduplication logic
+# When sending to a list of recipients, group by email address
+def send_email_to_recipients(email_content, recipients):
+    # Deduplicate by email address
+    unique_emails = {}
+    for recipient in recipients:
+        if recipient.email not in unique_emails:
+            unique_emails[recipient.email] = recipient
+    
+    # Send to each unique email only once
+    for email, recipient in unique_emails.items():
+        send_email(email_content, email)
+```
 
 ---
 
@@ -262,7 +297,7 @@ class Command(BaseCommand):
 | AD-002 | django-guardian for object-level permissions | ✅ | 2026-08-28 |
 | AD-003 | Fernet encryption for SMTP passwords | ✅ | 2026-08-28 |
 | AD-004 | Sync now, async queue later with retry logic | ✅ | 2026-08-28 |
-| AD-005 | Simple recipient management, global email uniqueness | ✅ | 2026-08-28 |
+| AD-005 | Recipient uniqueness by (first_name, last_name, email), deduplicate emails by address | ✅ | 2026-08-28 |
 | AD-006 | Users and Recipients are separate models | ✅ | 2026-08-28 |
 | AD-007 | 14-day retention for sent emails | ✅ | 2026-08-28 |
 | AD-008 | File system for attachments | ✅ | 2026-08-28 |
@@ -297,3 +332,4 @@ None currently. All critical decisions have been made for initial implementation
 | Date | Author | Changes |
 |------|--------|---------|
 | 2026-08-28 | Initial | Created document with decisions AD-001 through AD-009 |
+| 2026-08-28 | Updated | AD-005: Changed uniqueness constraint to (first_name, last_name, email) and added email deduplication requirement |
