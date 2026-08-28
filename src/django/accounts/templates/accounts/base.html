@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MailConveyor - Accounts{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            height: 100vh;
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .main-content {
+            padding: 20px;
+        }
+        .navbar-brand {
+            font-weight: bold;
+        }
+        .alert {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'home' %}">MailConveyor</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:user_list' %}">Users</a>
+                        </li>
+                        {% if user.is_admin %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'accounts:user_create' %}">Create User</a>
+                            </li>
+                        {% endif %}
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:profile' %}">Profile</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:logout' %}">Logout</a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:login' %}">Login</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            {% if user.is_authenticated %}
+                <div class="col-md-2 sidebar">
+                    <h5>Navigation</h5>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:user_list' %}">User Management</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:profile' %}">My Profile</a>
+                        </li>
+                        {% if user.is_admin %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'accounts:user_create' %}">Create User</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+                <div class="col-md-10 main-content">
+                    {% else %}
+                    <div class="col-12 main-content">
+                        {% endif %}
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-{{ message.tags }}">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                        
+                        {% block content %}{% endblock %}
+                    </div>
+                </div>
+            </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

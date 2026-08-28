@@ -1,0 +1,105 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}{% if object %}Edit User{% else %}Create User{% endif %} - MailConveyor{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-center">{% if object %}Edit User{% else %}Create User{% endif %}</h3>
+            </div>
+            <div class="card-body">
+                <form method="post" action="">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="id_email" class="form-label">Email *</label>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                            <div class="text-danger">
+                                {{ form.email.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="id_first_name" class="form-label">First Name *</label>
+                            {{ form.first_name }}
+                            {% if form.first_name.errors %}
+                                <div class="text-danger">
+                                    {{ form.first_name.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="id_last_name" class="form-label">Last Name *</label>
+                            {{ form.last_name }}
+                            {% if form.last_name.errors %}
+                                <div class="text-danger">
+                                    {{ form.last_name.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if not object or request.user.is_admin %}
+                        <div class="mb-3">
+                            <label for="id_role" class="form-label">Role *</label>
+                            {{ form.role }}
+                            {% if form.role.errors %}
+                                <div class="text-danger">
+                                    {{ form.role.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    
+                    {% if not object %}
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="id_password1" class="form-label">Password *</label>
+                                {{ form.password1 }}
+                                {% if form.password1.errors %}
+                                    <div class="text-danger">
+                                        {{ form.password1.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="id_password2" class="form-label">Confirm Password *</label>
+                                {{ form.password2 }}
+                                {% if form.password2.errors %}
+                                    <div class="text-danger">
+                                        {{ form.password2.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if object and request.user.is_admin %}
+                        <div class="mb-3 form-check">
+                            {{ form.is_active }}
+                            <label for="id_is_active" class="form-check-label">Active</label>
+                            {% if form.is_active.errors %}
+                                <div class="text-danger">
+                                    {{ form.is_active.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'accounts:user_list' %}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            {% if object %}Update User{% else %}Create User{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

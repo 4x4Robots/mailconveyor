@@ -37,6 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'accounts',
+    'guardian',
 ]
 
 MIDDLEWARE = [
@@ -115,6 +117,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [BASE_DIR / 'static']
+
+# Media files for attachments (AD-008)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 
 # Email
@@ -125,3 +133,17 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+
+# Custom user model
+AUTH_USER_MODEL = 'accounts.CustomUser'
+
+# Authentication backends (AD-002: django-guardian for object-level permissions)
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'guardian.backends.ObjectPermissionBackend',
+]
+
+# Login/Logout URLs
+LOGIN_URL = 'accounts:login'
+LOGIN_REDIRECT_URL = 'accounts:user_list'
+LOGOUT_REDIRECT_URL = 'accounts:login'
