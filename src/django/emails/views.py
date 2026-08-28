@@ -355,14 +355,8 @@ class EmailCreateView(LoginRequiredMixin, CreateView):
         return kwargs
     
     def form_valid(self, form):
-        # Save the email as draft first
-        email = form.save(commit=False)
-        email.created_by = self.request.user
-        email.status = 'DRAFT'
-        email.save()
-        
-        # Save many-to-many relationships
-        form.save_m2m()
+        # Save the email with user
+        email = form.save(user=self.request.user)
         
         messages.success(self.request, 'Email saved as draft. You can send it later.')
         
@@ -399,10 +393,15 @@ class EmailUpdateView(LoginRequiredMixin, UpdateView):
     def form_valid(self, form):
         email = form.save(commit=False)
         email.updated_at = timezone.now()
+        
+        # Save the email first
         email.save()
         
-        # Save many-to-many relationships
-        form.save_m2m()
+        # Save many-to-many relationships manually
+        if 'recipients' in form.cleaned_data:
+            email.recipients.set(form.cleaned_data['recipients'])
+        if 'mailing_lists' in form.cleaned_data:
+            email.mailing_lists.set(form.cleaned_data['mailing_lists'])
         
         messages.success(self.request, 'Email updated successfully.')
         

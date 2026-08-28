@@ -77,6 +77,14 @@ class EmailComposerForm(forms.ModelForm):
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         
+        # If this is an existing email instance, set initial data for custom fields
+        if 'instance' in kwargs and kwargs['instance']:
+            instance = kwargs['instance']
+            self.fields['recipients'].initial = instance.recipients.all()
+            self.fields['mailing_lists'].initial = instance.mailing_lists.all()
+            if hasattr(instance, 'template') and instance.template:
+                self.fields['template'].initial = instance.template
+        
         if user:
             # Filter recipients and mailing lists by user access
             from mailinglists.models import MailingList
@@ -182,15 +190,18 @@ class EmailComposerForm(forms.ModelForm):
         if user:
             email.created_by = user
         
+        # Set initial status
+        email.status = 'DRAFT'
+        
         if commit:
             email.save()
             
-            # Save many-to-many relationships
-            self.save_m2m()
-            
-            # Set initial status based on whether we're sending immediately
-            email.status = 'DRAFT'
-            email.save()
+            # Save many-to-many relationships manually since we have custom fields
+            if hasattr(self, 'cleaned_data'):
+                if 'recipients' in self.cleaned_data and self.cleaned_data['recipients']:
+                    email.recipients.set(self.cleaned_data['recipients'])
+                if 'mailing_lists' in self.cleaned_data and self.cleaned_data['mailing_lists']:
+                    email.mailing_lists.set(self.cleaned_data['mailing_lists'])
         
         return email
 

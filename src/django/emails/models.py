@@ -187,6 +187,16 @@ class Email(models.Model):
         help_text="SMTP configuration used to send this email"
     )
     
+    # ForeignKey to template used for this email
+    template = models.ForeignKey(
+        'EmailTemplate',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='emails_using_template',
+        help_text="Template used for this email"
+    )
+    
     # Error tracking
     error_message = models.TextField(
         blank=True,
